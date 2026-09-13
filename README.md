@@ -695,6 +695,15 @@ Use **Detect model**. Manual model naming is normally unnecessary for local Open
 Check the version shown in the Cockpit header. Owner goals require v0.9.0+.
 
 ---
+# Roadmap
+
+Next three steps, in order:
+
+1. 0.9.3: npm package and hardening of the direct LLM fetch path.
+2. 0.9.4: source-level provenance. Every advisor claim cites the exact issue, comment or handoff field it came from.
+3. 0.9.5: injection detection for all shipped UI languages, measured by a regression corpus in CI.
+
+Full roadmap and the things that are deliberately not planned: [docs/ROADMAP.md](docs/ROADMAP.md).
 
 # Known limitations
 
