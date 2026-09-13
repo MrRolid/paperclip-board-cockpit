@@ -1,0 +1,54 @@
+{
+  "name": "@rolid/board-cockpit",
+  "version": "0.9.2",
+  "private": true,
+  "type": "module",
+  "description": "Owner-centric control and LLM advisor plugin for Paperclip: project state, owner handoffs, wave context, next-task guidance, and per-task assistant.",
+  "scripts": {
+    "build": "node ./esbuild.config.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "paperclipPlugin": {
+    "manifest": "./dist/manifest.js",
+    "worker": "./dist/worker.js",
+    "ui": "./dist/ui/"
+  },
+  "devDependencies": {
+    "@paperclipai/plugin-sdk": "2026.831.1",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "esbuild": "^0.28.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.7.3",
+    "vitest": "^4.0.0"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "engines": {
+    "node": ">=24.11.0"
+  },
+  "license": "MIT",
+  "keywords": [
+    "paperclip",
+    "paperclip-plugin",
+    "llm",
+    "codex",
+    "claude",
+    "project-management",
+    "agent-orchestration",
+    "dashboard"
+  ],
+  "author": "Rolid",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MrRolid/paperclip-board-cockpit.git"
+  },
+  "homepage": "https://github.com/MrRolid/paperclip-board-cockpit#readme",
+  "bugs": {
+    "url": "https://github.com/MrRolid/paperclip-board-cockpit/issues"
+  }
+}
