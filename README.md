@@ -10,6 +10,8 @@ Board Cockpit adds that missing human control layer.
 >
 > **Not an official Paperclip project.** Board Cockpit is an independent MIT-licensed plugin.
 
+[![npm version](https://img.shields.io/npm/v/@rolid/paperclip-board-cockpit.svg)](https://www.npmjs.com/package/@rolid/paperclip-board-cockpit)
+
 ## What Board Cockpit answers
 
 The plugin tries to answer six owner-level questions:
@@ -25,7 +27,7 @@ The design principle is simple: **Paperclip remains the execution/control plane 
 
 ---
 
-## Main features
+## Main  features
 
 ### 1. Full owner cockpit
 
@@ -251,7 +253,7 @@ The model choice shown in Board Cockpit follows the adapter/model information al
 
 ## Supported environment
 
-Board Cockpit v0.9.5 was developed against:
+Board Cockpit v0.9.5 was developed and tested against:
 
 ```text
 Paperclip:               2026.831.1
@@ -260,19 +262,35 @@ Node.js:                 24.x
 pnpm:                    12.x
 ```
 
-Because Paperclip plugins are still alpha, use the version-matching installer rather than copying `dist/` from another host.
+The published npm package is the recommended installation path. The source installer remains available for development, compatibility testing and manual fallback installs.
 
 ## Requirements
 
-You need:
+For the normal npm installation you need:
 
 - a working self-hosted/local Paperclip instance,
-- `paperclipai` CLI configured for that instance,
-- Node.js compatible with your Paperclip release,
-- `pnpm`,
-- permission to install local trusted plugins.
+- the `paperclipai` CLI configured for that instance,
+- permission to install plugins.
 
-## Install from Git
+Node.js and `pnpm` are only needed when building/installing from source.
+
+## Install from npm (recommended)
+
+Install the current release directly from the public npm registry:
+
+```bash
+paperclipai plugin install @rolid/paperclip-board-cockpit
+```
+
+To install the exact version documented here:
+
+```bash
+paperclipai plugin install @rolid/paperclip-board-cockpit --version 0.9.5
+```
+
+The npm distribution path for v0.9.5 has been tested end-to-end against Paperclip `2026.831.1`: package resolution, manifest validation, plugin registration, health checks and browser UI loading all completed successfully.
+
+## Install from source (development / fallback)
 
 ```bash
 git clone https://github.com/MrRolid/paperclip-board-cockpit.git
@@ -280,7 +298,7 @@ cd paperclip-board-cockpit
 ./install-local.sh
 ```
 
-## Install from a release archive
+## Install from a release archive (manual fallback)
 
 ```bash
 unzip paperclip-board-cockpit-v0.9.5.zip
@@ -288,9 +306,9 @@ cd paperclip-board-cockpit-0.9.5
 ./install-local.sh
 ```
 
-## What the installer does
+## What `install-local.sh` does
 
-`install-local.sh` performs the following pipeline:
+The source installer is intended for development/manual installs and performs:
 
 ```text
 read local Paperclip version
@@ -305,9 +323,9 @@ read local Paperclip version
 It handles these states:
 
 ```text
-not installed  → install
-uninstalled    → install
-ready          → upgrade
+not installed   → install
+uninstalled     → install
+ready           → upgrade
 upgrade_pending → upgrade path
 ```
 
@@ -318,12 +336,7 @@ paperclipai plugin inspect rolid.board-cockpit
 paperclipai plugin health rolid.board-cockpit
 ```
 
-Expected output includes:
-
-```text
-version=0.9.5
-status=ready
-```
+Expected output includes version `0.9.5`, status `ready`, and a healthy plugin check.
 
 Then hard-refresh the Paperclip browser UI.
 
@@ -629,14 +642,14 @@ The LLM sits on top of already structured project context; it is not the source 
 
 ## Plugin says `failed to render`
 
-Check that the UI and worker versions match:
+Check that the UI and worker versions match and that the plugin is healthy:
 
 ```bash
 paperclipai plugin inspect rolid.board-cockpit
 paperclipai plugin health rolid.board-cockpit
 ```
 
-Re-run:
+If you installed from source, rebuild/reinstall with:
 
 ```bash
 ./install-local.sh
@@ -646,7 +659,20 @@ Then hard-refresh the browser.
 
 ## `Plugin already installed`
 
-Use the provided installer rather than calling `plugin install` manually. It detects install/upgrade/uninstalled state.
+For an existing npm-installed plugin, use Paperclip's upgrade path rather than installing a second copy:
+
+```bash
+paperclipai plugin upgrade rolid.board-cockpit
+```
+
+If you are deliberately switching from a local-path/source install to the npm package, uninstall the existing plugin **without** `--force`, then install the npm package:
+
+```bash
+paperclipai plugin uninstall rolid.board-cockpit
+paperclipai plugin install @rolid/paperclip-board-cockpit --version 0.9.5
+```
+
+Do not use `--force` unless you intentionally want to purge Board Cockpit's stored plugin state and configuration.
 
 ## Upgrade introduces new capabilities
 
@@ -716,30 +742,47 @@ Shipped security milestones are tracked in [docs/ROADMAP.md](docs/ROADMAP.md).
 
 # Upgrading
 
-From an existing checkout:
+For a normal npm installation:
+
+```bash
+paperclipai plugin upgrade rolid.board-cockpit
+```
+
+After the upgrade, verify the installed version and health:
+
+```bash
+paperclipai plugin inspect rolid.board-cockpit
+paperclipai plugin health rolid.board-cockpit
+```
+
+For a source checkout:
 
 ```bash
 git pull
 ./install-local.sh
 ```
 
-From a release archive, replace the old source tree and run the installer again.
+For a release archive, replace the old source tree and run `./install-local.sh` again.
 
-The installer will perform an upgrade when the plugin is already in `ready` state.
-
-Always review capability changes during an upgrade.
+Always review capability changes during an upgrade before approving them.
 
 ---
 
 # Uninstalling
 
-Use Paperclip's plugin manager:
+Use the CLI:
+
+```bash
+paperclipai plugin uninstall rolid.board-cockpit
+```
+
+Or use Paperclip's plugin manager:
 
 ```text
 Settings → Plugins → Board Cockpit → uninstall/delete
 ```
 
-Paperclip may preserve an `uninstalled` plugin record. A later `./install-local.sh` reinstall is supported.
+A normal uninstall preserves plugin state/configuration for a later reinstall. Use `--force` only when you intentionally want to purge that stored state.
 
 ---
 
@@ -818,6 +861,8 @@ in a public GitHub issue.
 ---
 
 # Release 0.9.5
+
+Board Cockpit 0.9.5 is published on npm as [`@rolid/paperclip-board-cockpit`](https://www.npmjs.com/package/@rolid/paperclip-board-cockpit).
 
 v0.9.5 adds measured multilingual prompt-injection hardening without changing the read-only Paperclip boundary, provenance pipeline, prompt structure or deterministic project-state logic. Injection-like instructions are checked across English, Czech, Slovak, German, Polish, French and Spanish at the same time, with Unicode normalization, diacritics-insensitive Latin matching, split-line detection and stable pattern IDs.
 
