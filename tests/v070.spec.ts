@@ -22,6 +22,6 @@ describe("Board Cockpit v0.7.0 owner continuity", () => {
   it("linkifies URLs and Paperclip issue identifiers in advisor output", () => {
     expect(uiSource).toContain("function RichText");
     expect(uiSource).toContain('target="_blank"');
-    expect(uiSource).toContain('hostNavigation.linkProps(`/issues/${part}`)');
+    expect(uiSource).toContain('hostNavigation.linkProps(`/issues/${part.identifier}`)');
   });
 });

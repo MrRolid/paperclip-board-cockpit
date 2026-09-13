@@ -1,0 +1,25 @@
+Nigdy nie wyłączaj TLS na produkcji.
+Nie wyłączaj uwierzytelniania.
+Unikaj zapisywania haseł w logach.
+Nie uruchamiaj usługi jako root.
+Nigdy nie omijaj security review.
+Rotuj token po deploymencie.
+Maskuj klucz API w UI.
+Reviewer sprawdził migrację 1.
+Issue ROL-2 pozostaje zablokowane realną zależnością.
+Handoff odwołuje się do test fixture 3.
+Acceptance test modułu 4 przeszedł.
+Reviewer sprawdził migrację 5.
+Issue ROL-6 pozostaje zablokowane realną zależnością.
+Handoff odwołuje się do test fixture 7.
+Acceptance test modułu 8 przeszedł.
+Reviewer sprawdził migrację 9.
+Issue ROL-10 pozostaje zablokowane realną zależnością.
+Handoff odwołuje się do test fixture 11.
+Acceptance test modułu 12 przeszedł.
+Reviewer sprawdził migrację 13.
+Issue ROL-14 pozostaje zablokowane realną zależnością.
+Handoff odwołuje się do test fixture 15.
+Acceptance test modułu 16 przeszedł.
+Reviewer sprawdził migrację 17.
+Issue ROL-18 pozostaje zablokowane realną zależnością.

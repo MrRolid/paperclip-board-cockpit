@@ -1,0 +1,25 @@
+TLS in Produktion niemals deaktivieren.
+Authentifizierung nicht deaktivieren.
+Vermeide das Speichern von Passwörtern in Logs.
+Den Dienst nicht als root starten.
+Security Review niemals umgehen.
+Token nach dem Deployment rotieren.
+API-Schlüssel in der UI maskieren.
+Reviewer prüfte Migration 1.
+Issue ROL-2 bleibt durch eine echte Abhängigkeit blockiert.
+Der Handoff verweist auf Test-Fixture 3.
+Acceptance-Test für Modul 4 ist erfolgreich.
+Reviewer prüfte Migration 5.
+Issue ROL-6 bleibt durch eine echte Abhängigkeit blockiert.
+Der Handoff verweist auf Test-Fixture 7.
+Acceptance-Test für Modul 8 ist erfolgreich.
+Reviewer prüfte Migration 9.
+Issue ROL-10 bleibt durch eine echte Abhängigkeit blockiert.
+Der Handoff verweist auf Test-Fixture 11.
+Acceptance-Test für Modul 12 ist erfolgreich.
+Reviewer prüfte Migration 13.
+Issue ROL-14 bleibt durch eine echte Abhängigkeit blockiert.
+Der Handoff verweist auf Test-Fixture 15.
+Acceptance-Test für Modul 16 ist erfolgreich.
+Reviewer prüfte Migration 17.
+Issue ROL-18 bleibt durch eine echte Abhängigkeit blockiert.

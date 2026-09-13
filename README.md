@@ -251,7 +251,7 @@ The model choice shown in Board Cockpit follows the adapter/model information al
 
 ## Supported environment
 
-Board Cockpit v0.9.3 was developed against:
+Board Cockpit v0.9.5 was developed against:
 
 ```text
 Paperclip:               2026.831.1
@@ -283,8 +283,8 @@ cd paperclip-board-cockpit
 ## Install from a release archive
 
 ```bash
-unzip paperclip-board-cockpit-v0.9.3.zip
-cd paperclip-board-cockpit-0.9.3
+unzip paperclip-board-cockpit-v0.9.5.zip
+cd paperclip-board-cockpit-0.9.5
 ./install-local.sh
 ```
 
@@ -321,7 +321,7 @@ paperclipai plugin health rolid.board-cockpit
 Expected output includes:
 
 ```text
-version=0.9.3
+version=0.9.5
 status=ready
 ```
 
@@ -526,19 +526,17 @@ ui.detailTab.register
 
 ## Prompt-injection defenses
 
-Project content is untrusted input.
+Project content is untrusted input. Board Cockpit detects injection-like instructions across all seven shipped UI languages (English, Czech, Slovak, German, Polish, French and Spanish) regardless of the selected UI locale. Matching is Unicode-aware and diacritics-insensitive for Latin-script text, and coverage is measured by the public precision-first regression corpus in [`tests/corpus/README.md`](tests/corpus/README.md). A detected instruction is redacted before LLM submission, but the regex layer is only defense in depth, not the primary security boundary. The corpus is a regression suite for known covered phrasings, not a claim of universal prompt-injection detection.
 
-Before issue/comment/handoff text is sent to an LLM, Board Cockpit applies defense-in-depth processing including:
+For languages outside those seven sets, unusual non-Latin script changes and common English prompt/credential tokens embedded in non-Latin text are flagged without redacting the line. The language-independent controls remain the read-only Paperclip capability boundary, the explicit untrusted-data envelope, plugin-generated provenance citations and multilingual generated-advice safety linting. Input size/depth limits, credential redaction and removal of hidden bidi/zero-width controls continue to apply. Precision is preferred over recall because a false positive removes legitimate project text from the advisor snapshot.
 
-- input size/depth limits,
-- removal of zero-width and bidi control characters,
-- credential/token/password redaction,
-- detection/redaction of common prompt-injection phrases,
-- an explicit untrusted-data envelope,
-- system instructions that project text is data, not authority,
-- generated-advice safety linting.
+The UI shows security findings if preprocessing changed or flagged suspicious input.
 
-The UI shows security findings if preprocessing changed suspicious input.
+## Provenance
+
+Advisor input is tagged with source IDs **after sanitization**. A citation such as `[ROL-22#state]` points to host-provided issue state; `[ROL-22#c:1f3a9b2c]` points to a specific comment; `[ROL-22#handoff.verified]` points to one parsed handoff field. `#state` is the only source class treated as independently established host truth. Description, comment and handoff citations remain reports and must not be silently upgraded into verified facts.
+
+The plugin creates the source registry; the model cannot add sources to it. Citations not present in the registry are shown as unknown and flagged in the provenance audit. The audit also highlights factual-looking lines in selected advisor sections that lack citations. This is an owner-visible warning, not an execution gate.
 
 ## LLM output is not trusted
 
@@ -692,6 +690,18 @@ Check the version shown in the Cockpit header. Owner goals require v0.9.0+.
 
 ---
 
+# Roadmap
+
+**Done in 0.9.5:** multilingual prompt-injection detection, public precision-first regression corpora, multilingual advice linting and CI measurement across all seven shipped UI languages.
+
+Next step:
+
+1. **1.0.0:** stabilization and release-readiness after the provenance and injection-hardening work; exact scope will be defined before implementation. The artifact-ingestion decision is documented in [docs/ARTIFACTS.md](docs/ARTIFACTS.md).
+
+Shipped security milestones are tracked in [docs/ROADMAP.md](docs/ROADMAP.md).
+
+---
+
 # Known limitations
 
 - Paperclip plugin APIs are still alpha and can change between releases.
@@ -804,6 +814,26 @@ Do not include:
 - LLM credentials
 
 in a public GitHub issue.
+
+---
+
+# Release 0.9.5
+
+v0.9.5 adds measured multilingual prompt-injection hardening without changing the read-only Paperclip boundary, provenance pipeline, prompt structure or deterministic project-state logic. Injection-like instructions are checked across English, Czech, Slovak, German, Polish, French and Spanish at the same time, with Unicode normalization, diacritics-insensitive Latin matching, split-line detection and stable pattern IDs.
+
+A public regression corpus measures positive detection and benign false positives for both LLM input preprocessing and generated-advice linting. Rare or mixed non-Latin scripts outside the covered languages are flagged as untrusted-language signals without redacting their text. CI runs the corpus alongside typecheck, tests and build. Artifact ingestion remains unimplemented; the investigation and recommendation are recorded in [docs/ARTIFACTS.md](docs/ARTIFACTS.md).
+
+See [CHANGELOG.md](CHANGELOG.md) and [RELEASE_NOTES_v0.9.5.md](RELEASE_NOTES_v0.9.5.md).
+
+---
+
+# Release 0.9.4
+
+v0.9.4 adds source-level provenance to LLM advisory output without changing Paperclip capabilities or deterministic project-state logic. Sanitized snapshot fragments receive plugin-generated source IDs, advisor claims can cite them, unknown citations and selected uncited factual claims are audited, and the UI links citations back to their issue while showing sanitized source excerpts.
+
+`#state` citations represent host-provided issue state. Description, comment, origin, goal and handoff citations remain reported context rather than independent verification. Provenance warnings are advisory and do not block or rewrite model output.
+
+See [CHANGELOG.md](CHANGELOG.md) and [RELEASE_NOTES_v0.9.4.md](RELEASE_NOTES_v0.9.4.md).
 
 ---
 

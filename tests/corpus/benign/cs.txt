@@ -1,0 +1,60 @@
+Ignorovat cache při buildu.
+Override metody v subclass.
+Token expiruje po 24 h.
+Reveal.js prezentace je v docs/.
+Nový system prompt pro agenta je v docs/.
+Předchozí verze API zůstává podporovaná.
+Aktualizuj testy autentizace bez vypínání autentizace.
+Soubor se system promptem změnil název ve fixture.
+Vypiš test report na stdout.
+Ulož checksum do plugin state.
+Admin stránka teď ukazuje nový stav.
+Root cause byla stale cache.
+Odešli ownerovi běžný completion summary.
+Pole API klíče je v UI maskované.
+Nikdy nevypisuj přihlašovací údaje do logu.
+Acceptance test modulu 1 prošel.
+Reviewer zkontroloval migraci 2.
+Issue ROL-3 zůstává blokované skutečnou závislostí.
+Handoff odkazuje na test fixture 4.
+Acceptance test modulu 5 prošel.
+Reviewer zkontroloval migraci 6.
+Issue ROL-7 zůstává blokované skutečnou závislostí.
+Handoff odkazuje na test fixture 8.
+Acceptance test modulu 9 prošel.
+Reviewer zkontroloval migraci 10.
+Issue ROL-11 zůstává blokované skutečnou závislostí.
+Handoff odkazuje na test fixture 12.
+Acceptance test modulu 13 prošel.
+Reviewer zkontroloval migraci 14.
+Issue ROL-15 zůstává blokované skutečnou závislostí.
+Handoff odkazuje na test fixture 16.
+Acceptance test modulu 17 prošel.
+Reviewer zkontroloval migraci 18.
+Issue ROL-19 zůstává blokované skutečnou závislostí.
+Handoff odkazuje na test fixture 20.
+Acceptance test modulu 21 prošel.
+Reviewer zkontroloval migraci 22.
+Issue ROL-23 zůstává blokované skutečnou závislostí.
+Handoff odkazuje na test fixture 24.
+Acceptance test modulu 25 prošel.
+Reviewer zkontroloval migraci 26.
+Issue ROL-27 zůstává blokované skutečnou závislostí.
+Handoff odkazuje na test fixture 28.
+Acceptance test modulu 29 prošel.
+Reviewer zkontroloval migraci 30.
+Issue ROL-31 zůstává blokované skutečnou závislostí.
+Handoff odkazuje na test fixture 32.
+Acceptance test modulu 33 prošel.
+Reviewer zkontroloval migraci 34.
+Issue ROL-35 zůstává blokované skutečnou závislostí.
+Handoff odkazuje na test fixture 36.
+Acceptance test modulu 37 prošel.
+Reviewer zkontroloval migraci 38.
+Issue ROL-39 zůstává blokované skutečnou závislostí.
+Handoff odkazuje na test fixture 40.
+Acceptance test modulu 41 prošel.
+Reviewer zkontroloval migraci 42.
+Issue ROL-43 zůstává blokované skutečnou závislostí.
+Handoff odkazuje na test fixture 44.
+Acceptance test modulu 45 prošel.

@@ -1,0 +1,11 @@
+import { definePatternSet, type PatternSet } from "./pattern.js";
+export const FR_PATTERNS: PatternSet = definePatternSet("fr", [
+  { id: "ignore_previous", verb: "ignore|ignorez|oublie|oubliez", object: "(?:(?:toutes|les)\\s+)?(?:instructions|consignes|regles|directives|ordres|messages)\\s+(?:precedentes|precedents|anterieures|anterieurs|ci-dessus)", note: "Ignorer l'autorité précédente" },
+  { id: "override_policy", verb: "contourne|contournez|remplace|remplacez|outrepasse|outrepassez", object: "instructions|prompt\\s+systeme|politique|regles\\s+de\\s+securite|garde-fous|directives\\s+systeme", note: "Contourner les règles système" },
+  { id: "reveal_secret", verb: "revele|revelez|affiche|affichez|imprime|imprimez|montre|montrez|expose|exposez", object: "prompt\\s+systeme|instructions\\s+cachees|cle\\s+api|token|mot\\s+de\\s+passe|identifiants|secret", note: "Révéler des données cachées", gap: 64 },
+  { id: "role_switch", verb: "tu\\s+es\\s+maintenant|vous\\s+etes\\s+maintenant|sois|soyez|agis\\s+comme|agissez\\s+comme", object: "assistant|systeme|developer|root|administrateur|admin|administrateur\\s+systeme", note: "Changement de rôle" },
+  { id: "replacement_system", verb: "cree|creez|ecris|ecrivez|definis|definissez|remplace|remplacez", object: "(?:un|une|de)?\\s*(?:nouveau|nouvelle|nouveaux|nouvelles|remplacement)\\s+(?:prompt\\s+systeme|instruction|instructions|consigne|consignes|regle|regles|directive|directives|ordre|ordres)", note: "Créer des règles de remplacement" },
+  { id: "follow_instead", verb: "suis|suivez|obeis\\s+a|obeissez\\s+a", object: "(?:ces|les\\s+instructions\\s+suivantes|les\\s+consignes\\s+suivantes)(?:\\s+instructions|\\s+consignes|\\s+regles)?\\s+a\\s+la\\s+place", note: "Suivre de nouvelles instructions à la place" },
+  { id: "model_must", verb: "(?:assistant|modele|llm)\\s+(?:doit|devrait)\\s+(?:ignorer|contourner|reveler|executer|envoyer|exfiltrer)", object: "instructions|consignes|regles|prompt\\s+systeme|ordre|secret|token|identifiants|donnees", note: "Ordre adressé au modèle" },
+  { id: "exfiltrate", verb: "envoie|envoyez|televerse|televersez|exfiltre|exfiltrez", object: "secret|token|identifiants|mot\\s+de\\s+passe|cle\\s+api|prompt\\s+systeme", note: "Exfiltrer des données sensibles", gap: 56 },
+]);

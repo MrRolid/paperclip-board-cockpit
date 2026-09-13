@@ -1,6 +1,6 @@
 {
   "name": "@rolid/board-cockpit",
-  "version": "0.9.3",
+  "version": "0.9.5",
   "private": true,
   "type": "module",
   "description": "Owner-centric control and LLM advisor plugin for Paperclip: project state, owner handoffs, wave context, next-task guidance, and per-task assistant.",

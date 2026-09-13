@@ -1,0 +1,25 @@
+Nikdy nevypínaj TLS na produkcii.
+Nerob vypnutie autentizácie.
+Vyhni sa ukladaniu hesiel do logu.
+Nespúšťaj službu ako root.
+Neobchádzaj security review.
+Token po deploymente rotuj.
+API kľúč v UI maskuj.
+Reviewer skontroloval migráciu 1.
+Issue ROL-2 zostáva blokované skutočnou závislosťou.
+Handoff odkazuje na test fixture 3.
+Acceptance test modulu 4 prešiel.
+Reviewer skontroloval migráciu 5.
+Issue ROL-6 zostáva blokované skutočnou závislosťou.
+Handoff odkazuje na test fixture 7.
+Acceptance test modulu 8 prešiel.
+Reviewer skontroloval migráciu 9.
+Issue ROL-10 zostáva blokované skutočnou závislosťou.
+Handoff odkazuje na test fixture 11.
+Acceptance test modulu 12 prešiel.
+Reviewer skontroloval migráciu 13.
+Issue ROL-14 zostáva blokované skutočnou závislosťou.
+Handoff odkazuje na test fixture 15.
+Acceptance test modulu 16 prešiel.
+Reviewer skontroloval migráciu 17.
+Issue ROL-18 zostáva blokované skutočnou závislosťou.

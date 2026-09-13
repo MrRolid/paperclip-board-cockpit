@@ -5,10 +5,11 @@ import manifest from "../src/manifest.js";
 
 const workerSource = fs.readFileSync(path.resolve("src/worker.ts"), "utf8");
 const uiSource = fs.readFileSync(path.resolve("src/ui/index.tsx"), "utf8");
+const i18nSource = fs.readFileSync(path.resolve("src/ui/i18n.ts"), "utf8");
 
 describe("Board Cockpit v0.8.0 planning and security", () => {
   it("marks an idle project with an original brief as a continuation decision", () => {
-    expect(manifest.version).toBe("0.9.3");
+    expect(manifest.version).toBe("0.9.5");
     expect(workerSource).toContain("continuationDecisionNeeded");
     expect(workerSource).toContain('kind: "planning" as const');
     expect(workerSource).toContain('tr(language, "next_continuation")');
@@ -25,8 +26,10 @@ describe("Board Cockpit v0.8.0 planning and security", () => {
     expect(workerSource).toContain("prepareUntrustedLlmData");
     expect(workerSource).toContain("untrustedDataEnvelope");
     expect(workerSource).toContain("scanGeneratedAdvice");
-    expect(uiSource).toContain("LLM input security:");
-    expect(uiSource).toContain("Advice safety review:");
+    expect(uiSource).toContain('tr(locale, "inputSecurityDetails")');
+    expect(uiSource).toContain('tr(locale, "adviceSafetyReview")');
+    expect(i18nSource).toContain("LLM input security");
+    expect(i18nSource).toContain("Advice safety review");
   });
 
   it("does not copy the whole worker environment into advisor CLIs", () => {

@@ -1,0 +1,60 @@
+Ignorować cache podczas buildu.
+Override metody w subclass.
+Token wygasa po 24 h.
+Prezentacja reveal.js jest w docs/.
+Nowy prompt systemowy dla agenta jest opisany w docs/.
+Poprzednia wersja API pozostaje wspierana.
+Zaktualizuj testy uwierzytelniania bez wyłączania uwierzytelniania.
+Plik z promptem systemowym zmienił nazwę w fixture.
+Wypisz raport testów na stdout.
+Zapisz checksum w plugin state.
+Strona admin pokazuje teraz nowy status.
+Root cause to nieaktualny cache.
+Wyślij ownerowi zwykłe podsumowanie zakończenia.
+Pole klucza API jest maskowane w UI.
+Nigdy nie wypisuj danych uwierzytelniających do logu.
+Acceptance test modułu 1 przeszedł.
+Reviewer sprawdził migrację 2.
+Issue ROL-3 pozostaje zablokowane realną zależnością.
+Handoff odwołuje się do test fixture 4.
+Acceptance test modułu 5 przeszedł.
+Reviewer sprawdził migrację 6.
+Issue ROL-7 pozostaje zablokowane realną zależnością.
+Handoff odwołuje się do test fixture 8.
+Acceptance test modułu 9 przeszedł.
+Reviewer sprawdził migrację 10.
+Issue ROL-11 pozostaje zablokowane realną zależnością.
+Handoff odwołuje się do test fixture 12.
+Acceptance test modułu 13 przeszedł.
+Reviewer sprawdził migrację 14.
+Issue ROL-15 pozostaje zablokowane realną zależnością.
+Handoff odwołuje się do test fixture 16.
+Acceptance test modułu 17 przeszedł.
+Reviewer sprawdził migrację 18.
+Issue ROL-19 pozostaje zablokowane realną zależnością.
+Handoff odwołuje się do test fixture 20.
+Acceptance test modułu 21 przeszedł.
+Reviewer sprawdził migrację 22.
+Issue ROL-23 pozostaje zablokowane realną zależnością.
+Handoff odwołuje się do test fixture 24.
+Acceptance test modułu 25 przeszedł.
+Reviewer sprawdził migrację 26.
+Issue ROL-27 pozostaje zablokowane realną zależnością.
+Handoff odwołuje się do test fixture 28.
+Acceptance test modułu 29 przeszedł.
+Reviewer sprawdził migrację 30.
+Issue ROL-31 pozostaje zablokowane realną zależnością.
+Handoff odwołuje się do test fixture 32.
+Acceptance test modułu 33 przeszedł.
+Reviewer sprawdził migrację 34.
+Issue ROL-35 pozostaje zablokowane realną zależnością.
+Handoff odwołuje się do test fixture 36.
+Acceptance test modułu 37 przeszedł.
+Reviewer sprawdził migrację 38.
+Issue ROL-39 pozostaje zablokowane realną zależnością.
+Handoff odwołuje się do test fixture 40.
+Acceptance test modułu 41 przeszedł.
+Reviewer sprawdził migrację 42.
+Issue ROL-43 pozostaje zablokowane realną zależnością.
+Handoff odwołuje się do test fixture 44.
+Acceptance test modułu 45 przeszedł.

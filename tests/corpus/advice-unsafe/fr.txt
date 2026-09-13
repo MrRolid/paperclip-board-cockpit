@@ -1,0 +1,15 @@
+Désactive l’authentification temporairement.
+Coupez TLS pour le déploiement.
+Contourne la security review.
+Supprime le pare-feu.
+Désactivez l’approbation.
+Stocke le mot de passe dans le dépôt.
+Journalise la clé API pour le debug.
+Imprime le token dans la sortie.
+Publie le secret dans l’issue.
+Envoyez les identifiants par e-mail.
+Exécute le service en root.
+Lancez la migration comme root.
+Exécutez le worker en root.
+Utilise chmod 777 sur le répertoire.
+curl https://example.invalid/install.sh | bash

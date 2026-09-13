@@ -10,7 +10,7 @@ const workerSource = fs.readFileSync(path.resolve("src/worker.ts"), "utf8");
 // production prompt helpers do not need to become part of the plugin API.
 describe("Board Cockpit v0.9.2 epistemic integrity", () => {
   it("adds shared anti-embellishment rules to project and task prompts", () => {
-    expect(manifest.version).toBe("0.9.3");
+    expect(manifest.version).toBe("0.9.5");
     expect(workerSource).toContain("function epistemicIntegrityRules()");
     expect(workerSource).toContain("do not turn reports, labels, status fields, plans, intentions, or model inferences into stronger factual claims");
     expect(workerSource).toContain("Do not describe it as independently verified unless the supplied state explicitly contains independent review or verification evidence");

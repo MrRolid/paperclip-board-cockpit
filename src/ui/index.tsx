@@ -17,8 +17,9 @@ import {
   type Locale,
 } from "../locale.js";
 import { tr } from "./i18n.js";
+import { tokenizeRichText, type ProvenanceAudit, type SourceRef } from "../provenance.js";
 
-const BOARD_COCKPIT_VERSION = "0.9.3";
+const BOARD_COCKPIT_VERSION = "0.9.5";
 
 type IssueView = {
   id: string;
@@ -87,13 +88,16 @@ type AnalysisState = {
     summary?: {
       totalFindings?: number;
       promptInjectionRedactions?: number;
+      foreignScriptFindings?: number;
       secretRedactions?: number;
       unicodeControlsRemoved?: number;
       truncations?: number;
     };
-    findings?: Array<{ kind?: string; path?: string; excerpt?: string }>;
+    findings?: Array<{ kind?: string; path?: string; excerpt?: string; patternId?: string }>;
   };
   adviceWarnings?: string[];
+  provenance?: ProvenanceAudit;
+  sources?: SourceRef[];
 };
 
 type CockpitData = {
@@ -201,7 +205,7 @@ type IssueAssistantData = {
     siblings: IssueView[];
     members: IssueView[];
     stats: { total: number; done: number; open: number; blocked: number; inProgress: number };
-    briefings: Array<{ issue: IssueView; summary: CompletionSummary; commentExcerpt: string | null }>;
+    briefings: Array<{ issue: IssueView; summary: CompletionSummary; commentId: string | null; commentExcerpt: string | null }>;
     ownerGuidance: {
       directAction: boolean;
       checkIssue: IssueView;
@@ -427,49 +431,120 @@ function WaveBadge({ state }: { state: CockpitData["projectState"]["waveState"] 
   return <Badge tone={tone}>{state}</Badge>;
 }
 
-function RichText({ text, hostNavigation }: { text: string; hostNavigation: ReturnType<typeof useHostNavigation> }) {
-  const parts = text.split(/(https?:\/\/[^\s<>"'`]+|\b[A-Z][A-Z0-9_-]*-\d+\b)/g);
+function RichText({ text, hostNavigation, sources = [], locale = "en" }: { text: string; hostNavigation: ReturnType<typeof useHostNavigation>; sources?: SourceRef[]; locale?: Locale }) {
+  const parts = tokenizeRichText(text, sources);
   return (
     <span style={{ whiteSpace: "pre-wrap" }}>
       {parts.map((part, index) => {
-        if (/^https?:\/\//.test(part)) {
-          const trailing = part.match(/[.,;:!?]+$/)?.[0] ?? "";
-          const href = trailing ? part.slice(0, -trailing.length) : part;
+        if (part.kind === "url") {
           return (
-            <span key={`${part}-${index}`}>
-              <a href={href} target="_blank" rel="noreferrer" style={{ color: colors.info, textDecoration: "underline" }}>{href}</a>{trailing}
+            <span key={`${part.text}-${index}`}>
+              <a href={part.href} target="_blank" rel="noreferrer" style={{ color: colors.info, textDecoration: "underline" }}>{part.text}</a>{part.trailing}
             </span>
           );
         }
-        if (/^[A-Z][A-Z0-9_-]*-\d+$/.test(part)) {
-          return <a key={`${part}-${index}`} {...hostNavigation.linkProps(`/issues/${part}`)} style={{ color: colors.info, textDecoration: "underline", fontWeight: 650 }}>{part}</a>;
+        if (part.kind === "issue") {
+          return <a key={`${part.text}-${index}`} {...hostNavigation.linkProps(`/issues/${part.identifier}`)} style={{ color: colors.info, textDecoration: "underline", fontWeight: 650 }}>{part.text}</a>;
         }
-        return <span key={index}>{part}</span>;
+        if (part.kind === "citation") {
+          const source = part.source;
+          const tooltip = source
+            ? `${tr(locale, "sourceKind")}: ${source.kind}\n${source.excerpt}`
+            : tr(locale, "sourceNotInSnapshot");
+          const citationStyle = {
+            color: source ? colors.info : colors.bad,
+            textDecoration: "underline",
+            fontSize: "0.92em",
+            fontWeight: 650,
+          } as const;
+          if (part.id.startsWith("goal:")) {
+            return (
+              <a
+                key={`${part.id}-${index}`}
+                href="#board-cockpit-owner-goals"
+                title={tooltip}
+                style={citationStyle}
+                onClick={(event) => {
+                  const target = typeof document !== "undefined" ? document.getElementById("board-cockpit-owner-goals") : null;
+                  if (target) {
+                    event.preventDefault();
+                    target.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }
+                }}
+              >{part.text}</a>
+            );
+          }
+          const identifier = source?.issueIdentifier ?? part.id.split("#", 1)[0];
+          // Paperclip 2026.831.1 exposes issue navigation but no documented stable
+          // comment-anchor helper, so comment citations intentionally link to the issue.
+          return <a key={`${part.id}-${index}`} {...hostNavigation.linkProps(`/issues/${identifier}`)} title={tooltip} style={citationStyle}>{part.text}</a>;
+        }
+        return <span key={index}>{part.text}</span>;
       })}
     </span>
   );
 }
 
-
-function AnalysisSecurityNotices({ analysis }: { analysis: AnalysisState | null | undefined }) {
+function AnalysisSecurityNotices({ analysis, locale }: { analysis: AnalysisState | null | undefined; locale: Locale }) {
   const summary = analysis?.inputSecurity?.summary;
   const findings = summary?.totalFindings ?? 0;
+  const findingItems = analysis?.inputSecurity?.findings ?? [];
   const warnings = analysis?.adviceWarnings ?? [];
-  if (!findings && warnings.length === 0) return null;
+  const provenance = analysis?.provenance;
+  const hasProvenance = Boolean(provenance && (analysis?.sources?.length || provenance.citedIds.length || provenance.unsourcedClaims.length || provenance.unknownCitations.length));
+  if (!findings && warnings.length === 0 && !hasProvenance) return null;
   return (
     <div style={{ display: "grid", gap: 6 }}>
       {findings > 0 ? (
-        <div style={{ border: `1px solid ${colors.warn}`, borderRadius: 8, padding: "7px 9px", background: "rgba(181,106,0,.06)", fontSize: 11, lineHeight: 1.45 }}>
-          <strong>LLM input security:</strong> sanitized {findings} suspicious/sensitive item(s)
-          {summary?.promptInjectionRedactions ? ` · injection-like: ${summary.promptInjectionRedactions}` : ""}
-          {summary?.secretRedactions ? ` · secrets: ${summary.secretRedactions}` : ""}
-          {summary?.unicodeControlsRemoved ? ` · hidden Unicode: ${summary.unicodeControlsRemoved}` : ""}.
-        </div>
+        <details style={{ border: `1px solid ${colors.warn}`, borderRadius: 8, padding: "7px 9px", background: "rgba(181,106,0,.06)", fontSize: 11, lineHeight: 1.45 }}>
+          <summary style={{ cursor: "pointer" }}>
+            <strong>{tr(locale, "inputSecurityDetails")}:</strong> {tr(locale, "sanitizedItems", { count: findings })}
+            {summary?.promptInjectionRedactions ? ` · injection-like: ${summary.promptInjectionRedactions}` : ""}
+            {summary?.foreignScriptFindings ? ` · foreign-script: ${summary.foreignScriptFindings}` : ""}
+            {summary?.secretRedactions ? ` · secrets: ${summary.secretRedactions}` : ""}
+            {summary?.unicodeControlsRemoved ? ` · hidden Unicode: ${summary.unicodeControlsRemoved}` : ""}.
+          </summary>
+          {findingItems.length > 0 ? (
+            <div style={{ display: "grid", gap: 4, marginTop: 7 }}>
+              {findingItems.map((finding, index) => (
+                <div key={`${finding.path ?? "finding"}-${index}`} style={{ overflowWrap: "anywhere" }}>
+                  <code>{finding.path ?? "$"}</code> · {finding.kind ?? "finding"}{finding.patternId ? ` · ${tr(locale, "patternId")}: ${finding.patternId}` : ""} · {finding.excerpt ?? ""}
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </details>
       ) : null}
       {warnings.length > 0 ? (
         <div style={{ border: `1px solid ${colors.warn}`, borderRadius: 8, padding: "7px 9px", background: "rgba(181,106,0,.06)", fontSize: 11, lineHeight: 1.45 }}>
-          <strong>Advice safety review:</strong> {warnings.join(" ")}
+          <strong>{tr(locale, "adviceSafetyReview")}:</strong> {warnings.join(" ")}
         </div>
+      ) : null}
+      {hasProvenance && provenance ? (
+        <details style={{ border: `1px solid ${provenance.unknownCitations.length ? colors.bad : colors.border}`, borderRadius: 8, padding: "7px 9px", fontSize: 11, lineHeight: 1.45 }}>
+          <summary style={{ cursor: "pointer" }}>
+            <strong>{tr(locale, "sourcesTitle")}:</strong> {tr(locale, "sourcesSummary", {
+              cited: provenance.citedIds.length,
+              state: provenance.stateOnlyClaims,
+              report: provenance.reportOnlyClaims,
+              unsourced: provenance.unsourcedClaims.length,
+              unknown: provenance.unknownCitations.length,
+            })}
+          </summary>
+          <div style={{ display: "grid", gap: 7, marginTop: 7 }}>
+            {provenance.unsourcedClaims.length > 0 ? (
+              <div>
+                <strong>{tr(locale, "unsourcedClaims")}</strong>
+                <div style={{ display: "grid", gap: 3, marginTop: 3 }}>
+                  {provenance.unsourcedClaims.map((claim, index) => <div key={`${claim.section}-${index}`}>{claim.section}: {claim.line.slice(0, 80)}</div>)}
+                </div>
+              </div>
+            ) : null}
+            {provenance.unknownCitations.length > 0 ? <div><strong>{tr(locale, "unknownCitations")}:</strong> {provenance.unknownCitations.join(", ")}</div> : null}
+            <div><strong>{tr(locale, "citedSources")}:</strong> {provenance.citedIds.length}</div>
+            <div>{tr(locale, "stateBackedClaims")}: {provenance.stateOnlyClaims} · {tr(locale, "reportOnlyClaims")}: {provenance.reportOnlyClaims}</div>
+          </div>
+        </details>
       ) : null}
     </div>
   );
@@ -921,7 +996,7 @@ function Cockpit({ companyId, compact }: { companyId: string; compact: boolean }
           </div>
         ) : null}
 
-        <AnalysisSecurityNotices analysis={data.llm.latestAnalysis} />
+        <AnalysisSecurityNotices analysis={data.llm.latestAnalysis} locale={locale} />
 
         {data.llm.latestAnalysis?.status !== "running" && data.llm.latestAnalysis?.analysis ? (
           <div style={{ border: `1px solid ${colors.border}`, borderRadius: 9, background: colors.soft, padding: 12, minHeight: compact ? undefined : 260 }}>
@@ -931,7 +1006,7 @@ function Cockpit({ companyId, compact }: { companyId: string; compact: boolean }
               {data.llm.latestAnalysis.model ? ` · ${data.llm.latestAnalysis.model}` : ""}
               {data.llm.latestAnalysis.generatedAt ? ` · ${fmt(data.llm.latestAnalysis.generatedAt)}` : ""}
             </div>
-            <div style={{ fontSize: 13, lineHeight: 1.6 }}><RichText text={data.llm.latestAnalysis.analysis} hostNavigation={hostNavigation} /></div>
+            <div style={{ fontSize: 13, lineHeight: 1.6 }}><RichText text={data.llm.latestAnalysis.analysis} hostNavigation={hostNavigation} sources={data.llm.latestAnalysis.sources} locale={locale} /></div>
           </div>
         ) : null}
       </div>
@@ -993,6 +1068,7 @@ function Cockpit({ companyId, compact }: { companyId: string; compact: boolean }
 
   const goalLabel = ownerGoalLabels(locale);
   const ownerGoalsSection = (
+    <div id="board-cockpit-owner-goals">
     <Section title={goalLabel.title ?? "Owner goals"} full>
       <div style={{ display: "grid", gap: 10 }}>
         <div style={{ color: colors.muted, fontSize: 11, lineHeight: 1.45 }}>{goalLabel.hint}</div>
@@ -1045,6 +1121,7 @@ function Cockpit({ companyId, compact }: { companyId: string; compact: boolean }
         )}
       </div>
     </Section>
+    </div>
   );
 
   return (
@@ -1278,6 +1355,7 @@ export function IssueCockpitAssistant({ context }: PluginDetailTabProps) {
           description: data.issue.description.slice(0, 10000),
           status: data.issue.status,
           priority: data.issue.priority,
+          updatedAt: data.issue.updatedAt,
           assigneeAgentId: data.issue.assigneeAgentId,
           assigneeName: data.issue.assigneeName,
           parent: data.issue.parent,
@@ -1302,7 +1380,13 @@ export function IssueCockpitAssistant({ context }: PluginDetailTabProps) {
         },
         pendingInteractions: data.pendingInteractions.map((item) => item.label),
         pendingApprovals: data.pendingApprovals.map((item) => ({ type: item.type, status: item.status })),
-        recentComments: data.recentComments.slice(0, 10).map((item) => item.body.slice(0, 3500)),
+        recentComments: data.recentComments.slice(0, 10).map((item) => ({
+          id: item.id,
+          createdAt: item.createdAt,
+          body: item.body.slice(0, 3500),
+          authorAgentId: item.authorAgentId,
+          actorUserId: item.actorUserId,
+        })),
         taskBrief: data.taskBrief,
         projectContext: data.projectContext,
         ownerGoals: data.ownerGoals,
@@ -1408,7 +1492,7 @@ export function IssueCockpitAssistant({ context }: PluginDetailTabProps) {
         </div>
         <div style={{ fontSize: 12, borderLeft: `3px solid ${data.waveContext.ownerGuidance.directAction ? colors.warn : colors.info}`, paddingLeft: 9 }}>
           <strong>{label.checkHere}:</strong> {data.waveContext.ownerGuidance.reason} {data.waveContext.ownerGuidance.checkIssue.identifier !== data.issue.identifier ? <a {...hostNavigation.linkProps(`/issues/${data.waveContext.ownerGuidance.checkIssue.identifier}`)} style={{ color: "inherit", fontWeight: 800 }}>→ {data.waveContext.ownerGuidance.checkIssue.identifier}</a> : null}
-          {data.waveContext.ownerGuidance.manualTest ? <div style={{ marginTop: 5, color: colors.muted }}>Manual test: <RichText text={data.waveContext.ownerGuidance.manualTest} hostNavigation={hostNavigation} /></div> : null}
+          {data.waveContext.ownerGuidance.manualTest ? <div style={{ marginTop: 5, color: colors.muted }}>Manual test: <RichText text={data.waveContext.ownerGuidance.manualTest} hostNavigation={hostNavigation} locale={locale} /></div> : null}
         </div>
       </div>
 
@@ -1446,7 +1530,7 @@ export function IssueCockpitAssistant({ context }: PluginDetailTabProps) {
         </div>
       ) : null}
 
-      <AnalysisSecurityNotices analysis={latest} />
+      <AnalysisSecurityNotices analysis={latest} locale={locale} />
 
       {draftNextTask ? (
         <div style={{ border: `1px solid ${colors.info}`, borderRadius: 9, background: "rgba(45,108,223,.045)", padding: 10, display: "grid", gap: 8 }}>
@@ -1455,7 +1539,7 @@ export function IssueCockpitAssistant({ context }: PluginDetailTabProps) {
             <ActionButton onClick={() => void copyNextTask()}>{copyState ?? label.copyNext}</ActionButton>
           </div>
           <div style={{ color: colors.muted, fontSize: 10 }}>=== DRAFT NEXT TASK BEGIN ===</div>
-          <div style={{ fontSize: 12, lineHeight: 1.55 }}><RichText text={draftNextTask} hostNavigation={hostNavigation} /></div>
+          <div style={{ fontSize: 12, lineHeight: 1.55 }}><RichText text={draftNextTask} hostNavigation={hostNavigation} sources={latest?.sources} locale={locale} /></div>
           <div style={{ color: colors.muted, fontSize: 10 }}>=== DRAFT NEXT TASK END ===</div>
           <div style={{ color: colors.muted, fontSize: 10 }}>Only the content inside these markers is copied as the task. Owner decision, trust-boundary notes and risks below are advisory metadata.</div>
         </div>
@@ -1466,7 +1550,7 @@ export function IssueCockpitAssistant({ context }: PluginDetailTabProps) {
           <div style={{ color: colors.muted, fontSize: 10, marginBottom: 6 }}>
             {label.latest}{latest.sourceLabel ? ` · ${latest.sourceLabel}` : ""}{latest.model ? ` · ${latest.model}` : ""}{latest.generatedAt ? ` · ${fmt(latest.generatedAt)}` : ""}
           </div>
-          <div style={{ fontSize: 12, lineHeight: 1.55 }}><RichText text={latest.analysis} hostNavigation={hostNavigation} /></div>
+          <div style={{ fontSize: 12, lineHeight: 1.55 }}><RichText text={latest.analysis} hostNavigation={hostNavigation} sources={latest.sources} locale={locale} /></div>
         </div>
       ) : !running ? <Empty>{label.noAnalysis}</Empty> : null}
 

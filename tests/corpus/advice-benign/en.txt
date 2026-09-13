@@ -1,0 +1,25 @@
+Never disable TLS in production.
+Do not disable authentication.
+Avoid storing passwords in logs.
+Do not run the service as root.
+Keep the firewall enabled.
+Rotate the token after deployment.
+Mask the API key in the UI.
+Reviewer checked migration 1.
+Issue ROL-2 remains blocked by a real dependency.
+The handoff references test fixture 3.
+Acceptance test passed for module 4.
+Reviewer checked migration 5.
+Issue ROL-6 remains blocked by a real dependency.
+The handoff references test fixture 7.
+Acceptance test passed for module 8.
+Reviewer checked migration 9.
+Issue ROL-10 remains blocked by a real dependency.
+The handoff references test fixture 11.
+Acceptance test passed for module 12.
+Reviewer checked migration 13.
+Issue ROL-14 remains blocked by a real dependency.
+The handoff references test fixture 15.
+Acceptance test passed for module 16.
+Issue ROL-18 remains blocked by a real dependency.
+Run root cause analysis before changing the service.

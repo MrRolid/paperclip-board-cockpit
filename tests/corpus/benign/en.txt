@@ -1,0 +1,60 @@
+Ignore cache entries during the build.
+Override the method in the subclass.
+The token expires after 24 h.
+The reveal.js presentation is in docs/.
+A new system prompt for the agent is documented in docs/.
+Previous API version remains supported.
+Update the authentication tests without disabling authentication.
+The system prompt file name changed in the fixture.
+Print the test report to stdout.
+Store the checksum in plugin state.
+The admin page now shows the new status.
+The root cause was a stale cache.
+Send the owner a normal completion summary.
+The API key field is masked in the UI.
+Do not expose credentials in logs.
+Acceptance test passed for module 1.
+Reviewer checked migration 2.
+Issue ROL-3 remains blocked by a real dependency.
+The handoff references test fixture 4.
+Acceptance test passed for module 5.
+Reviewer checked migration 6.
+Issue ROL-7 remains blocked by a real dependency.
+The handoff references test fixture 8.
+Acceptance test passed for module 9.
+Reviewer checked migration 10.
+Issue ROL-11 remains blocked by a real dependency.
+The handoff references test fixture 12.
+Acceptance test passed for module 13.
+Reviewer checked migration 14.
+Issue ROL-15 remains blocked by a real dependency.
+The handoff references test fixture 16.
+Acceptance test passed for module 17.
+Reviewer checked migration 18.
+Issue ROL-19 remains blocked by a real dependency.
+The handoff references test fixture 20.
+Acceptance test passed for module 21.
+Reviewer checked migration 22.
+Issue ROL-23 remains blocked by a real dependency.
+The handoff references test fixture 24.
+Acceptance test passed for module 25.
+Reviewer checked migration 26.
+Issue ROL-27 remains blocked by a real dependency.
+The handoff references test fixture 28.
+Acceptance test passed for module 29.
+Reviewer checked migration 30.
+Issue ROL-31 remains blocked by a real dependency.
+The handoff references test fixture 32.
+Acceptance test passed for module 33.
+Reviewer checked migration 34.
+Issue ROL-35 remains blocked by a real dependency.
+The handoff references test fixture 36.
+Acceptance test passed for module 37.
+Reviewer checked migration 38.
+Issue ROL-39 remains blocked by a real dependency.
+The handoff references test fixture 40.
+Acceptance test passed for module 41.
+Reviewer checked migration 42.
+Issue ROL-43 remains blocked by a real dependency.
+The handoff references test fixture 44.
+Acceptance test passed for module 45.

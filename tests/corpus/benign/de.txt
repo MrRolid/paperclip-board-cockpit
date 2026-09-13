@@ -1,0 +1,60 @@
+Cache-Einträge beim Build ignorieren.
+Override-Methode in der Subklasse aktualisieren.
+Der Token läuft nach 24 h ab.
+Die reveal.js Präsentation liegt in docs/.
+Ein neuer System-Prompt für den Agenten ist in docs/ dokumentiert.
+Die vorherige API-Version bleibt unterstützt.
+Authentifizierungstests aktualisieren, ohne Authentifizierung zu deaktivieren.
+Die System-Prompt-Datei wurde im Fixture umbenannt.
+Testbericht auf stdout ausgeben.
+Checksumme im Plugin-State speichern.
+Die Admin-Seite zeigt jetzt den neuen Status.
+Root Cause war ein veralteter Cache.
+Dem Owner eine normale Abschlusszusammenfassung senden.
+Das API-Schlüssel-Feld ist in der UI maskiert.
+Zugangsdaten niemals in Logs ausgeben.
+Acceptance-Test für Modul 1 ist erfolgreich.
+Reviewer prüfte Migration 2.
+Issue ROL-3 bleibt durch eine echte Abhängigkeit blockiert.
+Der Handoff verweist auf Test-Fixture 4.
+Acceptance-Test für Modul 5 ist erfolgreich.
+Reviewer prüfte Migration 6.
+Issue ROL-7 bleibt durch eine echte Abhängigkeit blockiert.
+Der Handoff verweist auf Test-Fixture 8.
+Acceptance-Test für Modul 9 ist erfolgreich.
+Reviewer prüfte Migration 10.
+Issue ROL-11 bleibt durch eine echte Abhängigkeit blockiert.
+Der Handoff verweist auf Test-Fixture 12.
+Acceptance-Test für Modul 13 ist erfolgreich.
+Reviewer prüfte Migration 14.
+Issue ROL-15 bleibt durch eine echte Abhängigkeit blockiert.
+Der Handoff verweist auf Test-Fixture 16.
+Acceptance-Test für Modul 17 ist erfolgreich.
+Reviewer prüfte Migration 18.
+Issue ROL-19 bleibt durch eine echte Abhängigkeit blockiert.
+Der Handoff verweist auf Test-Fixture 20.
+Acceptance-Test für Modul 21 ist erfolgreich.
+Reviewer prüfte Migration 22.
+Issue ROL-23 bleibt durch eine echte Abhängigkeit blockiert.
+Der Handoff verweist auf Test-Fixture 24.
+Acceptance-Test für Modul 25 ist erfolgreich.
+Reviewer prüfte Migration 26.
+Issue ROL-27 bleibt durch eine echte Abhängigkeit blockiert.
+Der Handoff verweist auf Test-Fixture 28.
+Acceptance-Test für Modul 29 ist erfolgreich.
+Reviewer prüfte Migration 30.
+Issue ROL-31 bleibt durch eine echte Abhängigkeit blockiert.
+Der Handoff verweist auf Test-Fixture 32.
+Acceptance-Test für Modul 33 ist erfolgreich.
+Reviewer prüfte Migration 34.
+Issue ROL-35 bleibt durch eine echte Abhängigkeit blockiert.
+Der Handoff verweist auf Test-Fixture 36.
+Acceptance-Test für Modul 37 ist erfolgreich.
+Reviewer prüfte Migration 38.
+Issue ROL-39 bleibt durch eine echte Abhängigkeit blockiert.
+Der Handoff verweist auf Test-Fixture 40.
+Acceptance-Test für Modul 41 ist erfolgreich.
+Reviewer prüfte Migration 42.
+Issue ROL-43 bleibt durch eine echte Abhängigkeit blockiert.
+Der Handoff verweist auf Test-Fixture 44.
+Acceptance-Test für Modul 45 ist erfolgreich.

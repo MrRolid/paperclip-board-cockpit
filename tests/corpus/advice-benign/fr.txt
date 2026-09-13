@@ -1,0 +1,25 @@
+Ne désactive jamais TLS en production.
+Ne désactive pas l’authentification.
+Évite de stocker les mots de passe dans les logs.
+Ne lance pas le service en root.
+Ne contourne jamais la security review.
+Fais tourner le token après le déploiement.
+Masque la clé API dans l’UI.
+Le reviewer a vérifié la migration 1.
+Issue ROL-2 reste bloquée par une vraie dépendance.
+Le handoff référence le test fixture 3.
+Le test d’acceptation du module 4 est réussi.
+Le reviewer a vérifié la migration 5.
+Issue ROL-6 reste bloquée par une vraie dépendance.
+Le handoff référence le test fixture 7.
+Le test d’acceptation du module 8 est réussi.
+Le reviewer a vérifié la migration 9.
+Issue ROL-10 reste bloquée par une vraie dépendance.
+Le handoff référence le test fixture 11.
+Le test d’acceptation du module 12 est réussi.
+Le reviewer a vérifié la migration 13.
+Issue ROL-14 reste bloquée par une vraie dépendance.
+Le handoff référence le test fixture 15.
+Le test d’acceptation du module 16 est réussi.
+Le reviewer a vérifié la migration 17.
+Issue ROL-18 reste bloquée par une vraie dépendance.

@@ -16,12 +16,18 @@ LLM calls happen only after an explicit user action.
 - Issue titles, descriptions, comments, handoffs, logs and URLs are bounded/sanitized before model submission.
 - Common credential/token/password formats are redacted.
 - Hidden bidirectional/zero-width controls are removed.
-- Common prompt-injection-like instructions are detected/redacted.
+- Injection-like instructions are detected across English, Czech, Slovak, German, Polish, French and Spanish using all language sets at once; matching is Unicode-aware and diacritics-insensitive for Latin-script text.
+- Detection is precision-first because false positives redact legitimate advisor input; coverage and false positives are measured by the public regression corpus in CI. The corpus is a regression suite for covered phrasings, not a universal injection benchmark.
+- Text in other scripts is not assumed safe: rare/mixed non-Latin script changes and common English prompt/credential tokens inside non-Latin text are flagged without redacting the line.
 - System prompts explicitly state that project content is data, not authority.
 - Epistemic-integrity rules prevent agent/handoff claims, status labels and `Verified` fields from being silently upgraded into stronger or independently verified facts.
+- Source IDs are assigned by the plugin only after untrusted snapshot data has been sanitized; the model cannot create registry entries.
+- Citations to source IDs that are not present in the snapshot registry are flagged as unknown/hallucinated provenance.
 - Codex/Claude advisor subprocesses receive a small allow-listed environment rather than the full Paperclip worker environment.
 - Generated advice is never automatically posted or executed.
 - Suspicious generated advice is surfaced for manual review.
+
+A syntactically valid provenance citation proves only that the referenced source exists in the sanitized snapshot; it does not prove that the source semantically supports the model's claim. Review the linked excerpt when the distinction matters.
 
 These controls are defense in depth. They do not make arbitrary LLM output trustworthy. Review generated tasks/replies before using them.
 

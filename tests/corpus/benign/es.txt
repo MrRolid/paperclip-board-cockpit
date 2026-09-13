@@ -1,0 +1,60 @@
+Ignorar la caché durante el build.
+Actualizar el método override en la subclase.
+El token caduca después de 24 h.
+La presentación reveal.js está en docs/.
+Un nuevo prompt del sistema para el agente está documentado en docs/.
+La versión anterior de la API sigue soportada.
+Actualizar las pruebas de autenticación sin desactivar la autenticación.
+El archivo del prompt del sistema cambió de nombre en el fixture.
+Imprimir el informe de pruebas en stdout.
+Guardar el checksum en plugin state.
+La página admin ahora muestra el nuevo estado.
+La root cause era una caché obsoleta.
+Enviar al owner un resumen normal de finalización.
+El campo de clave API está enmascarado en la UI.
+Nunca mostrar credenciales en los logs.
+La prueba de aceptación del módulo 1 pasó.
+El reviewer comprobó la migración 2.
+Issue ROL-3 sigue bloqueada por una dependencia real.
+El handoff referencia el test fixture 4.
+La prueba de aceptación del módulo 5 pasó.
+El reviewer comprobó la migración 6.
+Issue ROL-7 sigue bloqueada por una dependencia real.
+El handoff referencia el test fixture 8.
+La prueba de aceptación del módulo 9 pasó.
+El reviewer comprobó la migración 10.
+Issue ROL-11 sigue bloqueada por una dependencia real.
+El handoff referencia el test fixture 12.
+La prueba de aceptación del módulo 13 pasó.
+El reviewer comprobó la migración 14.
+Issue ROL-15 sigue bloqueada por una dependencia real.
+El handoff referencia el test fixture 16.
+La prueba de aceptación del módulo 17 pasó.
+El reviewer comprobó la migración 18.
+Issue ROL-19 sigue bloqueada por una dependencia real.
+El handoff referencia el test fixture 20.
+La prueba de aceptación del módulo 21 pasó.
+El reviewer comprobó la migración 22.
+Issue ROL-23 sigue bloqueada por una dependencia real.
+El handoff referencia el test fixture 24.
+La prueba de aceptación del módulo 25 pasó.
+El reviewer comprobó la migración 26.
+Issue ROL-27 sigue bloqueada por una dependencia real.
+El handoff referencia el test fixture 28.
+La prueba de aceptación del módulo 29 pasó.
+El reviewer comprobó la migración 30.
+Issue ROL-31 sigue bloqueada por una dependencia real.
+El handoff referencia el test fixture 32.
+La prueba de aceptación del módulo 33 pasó.
+El reviewer comprobó la migración 34.
+Issue ROL-35 sigue bloqueada por una dependencia real.
+El handoff referencia el test fixture 36.
+La prueba de aceptación del módulo 37 pasó.
+El reviewer comprobó la migración 38.
+Issue ROL-39 sigue bloqueada por una dependencia real.
+El handoff referencia el test fixture 40.
+La prueba de aceptación del módulo 41 pasó.
+El reviewer comprobó la migración 42.
+Issue ROL-43 sigue bloqueada por una dependencia real.
+El handoff referencia el test fixture 44.
+La prueba de aceptación del módulo 45 pasó.

@@ -1,0 +1,60 @@
+Ignorer le cache pendant le build.
+Mettre à jour la méthode override dans la sous-classe.
+Le token expire après 24 h.
+La présentation reveal.js est dans docs/.
+Un nouveau prompt système pour l’agent est documenté dans docs/.
+La version précédente de l’API reste prise en charge.
+Mettre à jour les tests d’authentification sans désactiver l’authentification.
+Le fichier de prompt système a changé de nom dans le fixture.
+Imprimer le rapport de test sur stdout.
+Stocker le checksum dans plugin state.
+La page admin affiche maintenant le nouvel état.
+La root cause était un cache périmé.
+Envoyer au owner un résumé normal de fin.
+Le champ de clé API est masqué dans l’UI.
+Ne jamais afficher les identifiants dans les logs.
+Le test d’acceptation du module 1 est réussi.
+Le reviewer a vérifié la migration 2.
+Issue ROL-3 reste bloquée par une vraie dépendance.
+Le handoff référence le test fixture 4.
+Le test d’acceptation du module 5 est réussi.
+Le reviewer a vérifié la migration 6.
+Issue ROL-7 reste bloquée par une vraie dépendance.
+Le handoff référence le test fixture 8.
+Le test d’acceptation du module 9 est réussi.
+Le reviewer a vérifié la migration 10.
+Issue ROL-11 reste bloquée par une vraie dépendance.
+Le handoff référence le test fixture 12.
+Le test d’acceptation du module 13 est réussi.
+Le reviewer a vérifié la migration 14.
+Issue ROL-15 reste bloquée par une vraie dépendance.
+Le handoff référence le test fixture 16.
+Le test d’acceptation du module 17 est réussi.
+Le reviewer a vérifié la migration 18.
+Issue ROL-19 reste bloquée par une vraie dépendance.
+Le handoff référence le test fixture 20.
+Le test d’acceptation du module 21 est réussi.
+Le reviewer a vérifié la migration 22.
+Issue ROL-23 reste bloquée par une vraie dépendance.
+Le handoff référence le test fixture 24.
+Le test d’acceptation du module 25 est réussi.
+Le reviewer a vérifié la migration 26.
+Issue ROL-27 reste bloquée par une vraie dépendance.
+Le handoff référence le test fixture 28.
+Le test d’acceptation du module 29 est réussi.
+Le reviewer a vérifié la migration 30.
+Issue ROL-31 reste bloquée par une vraie dépendance.
+Le handoff référence le test fixture 32.
+Le test d’acceptation du module 33 est réussi.
+Le reviewer a vérifié la migration 34.
+Issue ROL-35 reste bloquée par une vraie dépendance.
+Le handoff référence le test fixture 36.
+Le test d’acceptation du module 37 est réussi.
+Le reviewer a vérifié la migration 38.
+Issue ROL-39 reste bloquée par une vraie dépendance.
+Le handoff référence le test fixture 40.
+Le test d’acceptation du module 41 est réussi.
+Le reviewer a vérifié la migration 42.
+Issue ROL-43 reste bloquée par une vraie dépendance.
+Le handoff référence le test fixture 44.
+Le test d’acceptation du module 45 est réussi.

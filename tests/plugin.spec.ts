@@ -4,7 +4,7 @@ import manifest from "../src/manifest.js";
 describe("Board Cockpit manifest", () => {
   it("registers dashboard, full page, and main sidebar entry", () => {
     expect(manifest.id).toBe("rolid.board-cockpit");
-    expect(manifest.version).toBe("0.9.3");
+    expect(manifest.version).toBe("0.9.5");
     expect(manifest.ui?.slots?.some((slot) => slot.type === "dashboardWidget")).toBe(true);
     expect(manifest.ui?.slots?.some((slot) => slot.type === "page")).toBe(true);
     expect(manifest.ui?.slots?.some((slot) => slot.type === "sidebar")).toBe(true);
