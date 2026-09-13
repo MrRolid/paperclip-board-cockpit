@@ -8,7 +8,7 @@ const uiSource = fs.readFileSync(path.resolve("src/ui/index.tsx"), "utf8");
 
 describe("Board Cockpit v0.8.0 planning and security", () => {
   it("marks an idle project with an original brief as a continuation decision", () => {
-    expect(manifest.version).toBe("0.9.2");
+    expect(manifest.version).toBe("0.9.3");
     expect(workerSource).toContain("continuationDecisionNeeded");
     expect(workerSource).toContain('kind: "planning" as const');
     expect(workerSource).toContain('tr(language, "next_continuation")');

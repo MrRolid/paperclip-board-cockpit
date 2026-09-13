@@ -8,7 +8,7 @@ const uiSource = fs.readFileSync(path.resolve("src/ui/index.tsx"), "utf8");
 
 describe("Board Cockpit v0.9.2 owner goals", () => {
   it("stores owner goals only in plugin state", () => {
-    expect(manifest.version).toBe("0.9.2");
+    expect(manifest.version).toBe("0.9.3");
     expect(workerSource).toContain('"add-owner-goal"');
     expect(workerSource).toContain('"update-owner-goal"');
     expect(workerSource).toContain('"delete-owner-goal"');

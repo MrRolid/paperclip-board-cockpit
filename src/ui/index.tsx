@@ -18,7 +18,7 @@ import {
 } from "../locale.js";
 import { tr } from "./i18n.js";
 
-const BOARD_COCKPIT_VERSION = "0.9.2";
+const BOARD_COCKPIT_VERSION = "0.9.3";
 
 type IssueView = {
   id: string;

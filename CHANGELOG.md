@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.9.3
+
+- Hardened the direct local-LLM HTTP path without changing prompts, UI, project-state logic or capabilities.
+- Direct requests now refuse redirects with a clear error instead of following them.
+- Policy-approved DNS results are pinned into the direct HTTP(S) connection, eliminating a second independent lookup on that path while preserving the configured hostname for Host/TLS validation.
+- Added `100.64.0.0/10` carrier-grade NAT to the private-address class so it requires the existing private/LAN opt-in.
+- Fixed IPv6 ULA/link-local detection so string prefixes on ordinary DNS hostnames are not mistaken for IP ranges.
+- Consolidated IPv4/IPv6 destination classification into one shared address classifier.
+- Added v0.9.3 regression coverage for CGNAT boundaries, IPv6 literal handling, link-local rejection, address pinning and redirect refusal.
+- Removed deployment-specific `install-on-*.sh` material from the release tree; `install-local.sh` remains the development/local installer.
+
 ## 0.9.2
 
 - Added explicit epistemic-integrity rules to project-level and task-level LLM prompts.

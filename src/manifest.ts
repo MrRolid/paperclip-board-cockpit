@@ -3,7 +3,7 @@ import type { PaperclipPluginManifestV1 } from "@paperclipai/plugin-sdk";
 const manifest: PaperclipPluginManifestV1 = {
   id: "rolid.board-cockpit",
   apiVersion: 1,
-  version: "0.9.2",
+  version: "0.9.3",
   displayName: "Board Cockpit",
   description:
     "Owner-centric Paperclip cockpit: project state, owner handoffs, implementation-wave context, original-project continuity, owner-defined tracking goals, secure next-task guidance, prompt-injection-resistant LLM assistance, manual verification, per-task advice, and orchestration health.",

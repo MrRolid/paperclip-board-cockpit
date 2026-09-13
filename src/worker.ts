@@ -3,13 +3,13 @@ import { spawn } from "node:child_process";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { lookup } from "node:dns/promises";
 import type { Agent, Issue, IssueComment } from "@paperclipai/plugin-sdk";
 import { hasStructuredSummary, parseCompletionSummary, type CompletionSummary } from "./briefing.js";
 import { classifyReportedRunning } from "./runtime.js";
 import { LANGUAGE_NAMES, normalizeLanguagePreference, resolveLanguage, type LanguagePreference, type Locale } from "./locale.js";
 import { tr } from "./ui/i18n.js";
 import { prepareUntrustedLlmData, sanitizeModelOutput, scanGeneratedAdvice, untrustedDataEnvelope, type LlmSecuritySummary } from "./security.js";
+import { LLM_REDIRECT_ERROR, addressKind, assertDirectLlmEndpointPolicy, createPinnedDirectLlmFetcher, isObviouslyPrivateEndpoint, validateLlmBaseUrl } from "./llm-network.js";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -47,78 +47,6 @@ function normalizeChatCompletionsUrl(baseUrl: string): string {
   if (trimmed.endsWith("/chat/completions")) return trimmed;
   if (trimmed.endsWith("/v1")) return `${trimmed}/chat/completions`;
   return `${trimmed}/v1/chat/completions`;
-}
-
-function isObviouslyPrivateEndpoint(baseUrl: string): boolean {
-  try {
-    const url = new URL(baseUrl);
-    const host = url.hostname.replace(/^\[|\]$/g, "").toLowerCase();
-    if (host === "localhost" || host === "::1") return true;
-    if (/^127\./.test(host) || /^10\./.test(host) || /^192\.168\./.test(host) || /^169\.254\./.test(host)) return true;
-    const m = host.match(/^172\.(\d{1,3})\./);
-    if (m) {
-      const second = Number(m[1]);
-      if (second >= 16 && second <= 31) return true;
-    }
-    if (host.startsWith("fc") || host.startsWith("fd") || host.startsWith("fe80")) return true;
-  } catch {
-    return false;
-  }
-  return false;
-}
-
-function validateLlmBaseUrl(baseUrl: string): URL {
-  let url: URL;
-  try {
-    url = new URL(baseUrl.trim());
-  } catch {
-    throw new Error("Local LLM base URL is invalid");
-  }
-  if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error("Local LLM URL must use http or https");
-  if (url.username || url.password) throw new Error("Credentials must not be embedded in the local LLM URL");
-  if (url.hostname === "169.254.169.254") throw new Error("Cloud metadata endpoints are not allowed");
-  return url;
-}
-
-function isExplicitLanEndpoint(baseUrl: string): boolean {
-  const url = validateLlmBaseUrl(baseUrl);
-  const host = url.hostname.replace(/^\[|\]$/g, "").toLowerCase();
-  if (host === "localhost" || host === "::1" || /^127\./.test(host)) return true;
-  if (/^10\./.test(host) || /^192\.168\./.test(host)) return true;
-  const m = host.match(/^172\.(\d{1,3})\./);
-  if (m) {
-    const second = Number(m[1]);
-    if (second >= 16 && second <= 31) return true;
-  }
-  return host.startsWith("fc") || host.startsWith("fd");
-}
-
-function addressKind(address: string): "lan" | "linklocal" | "public" {
-  const normalized = address.toLowerCase();
-  if (normalized === "::1" || normalized.startsWith("127.")) return "lan";
-  if (normalized.startsWith("10.") || normalized.startsWith("192.168.")) return "lan";
-  const v4 = normalized.match(/^172\.(\d{1,3})\./);
-  if (v4) {
-    const second = Number(v4[1]);
-    if (second >= 16 && second <= 31) return "lan";
-  }
-  if (normalized.startsWith("fc") || normalized.startsWith("fd")) return "lan";
-  if (normalized.startsWith("169.254.") || normalized.startsWith("fe80:")) return "linklocal";
-  return "public";
-}
-
-async function assertDirectLlmEndpointPolicy(baseUrl: string, allowPrivateNetwork: boolean): Promise<void> {
-  const url = validateLlmBaseUrl(baseUrl);
-  const host = url.hostname.replace(/^\[|\]$/g, "");
-  const resolved = await lookup(host, { all: true, verbatim: true }).catch((error) => {
-    throw new Error(`Cannot resolve local LLM host: ${String(error)}`);
-  });
-  if (resolved.length === 0) throw new Error("Local LLM host resolved to no addresses");
-  const kinds = resolved.map((item) => addressKind(item.address));
-  if (kinds.includes("linklocal")) throw new Error("Link-local/cloud-metadata style LLM destinations are not allowed");
-  if (kinds.includes("lan") && !allowPrivateNetwork) {
-    throw new Error("Local LLM resolves to a private address. Enable the explicit private/LAN endpoint option if this is intentional.");
-  }
 }
 
 function normalizeModelsUrl(baseUrl: string): string {
@@ -215,7 +143,10 @@ async function discoverLocalModels(fetcher: HttpFetcher, config: JsonRecord, sig
   if (!baseUrl) throw new Error("Local LLM base URL is not configured");
   validateLlmBaseUrl(baseUrl);
   const modelsUrl = normalizeModelsUrl(baseUrl);
-  const response = await fetcher(modelsUrl, { method: "GET", signal });
+  const response = await fetcher(modelsUrl, { method: "GET", signal, redirect: "error" });
+  if (response.status >= 300 && response.status < 400) {
+    throw new Error(LLM_REDIRECT_ERROR);
+  }
   if (!response.ok) {
     const body = (await response.text()).slice(0, 500);
     throw new Error(`LLM models HTTP ${response.status}: ${body}`);
@@ -235,6 +166,7 @@ async function resolveLocalModel(fetcher: HttpFetcher, config: JsonRecord, signa
     const discovered = await discoverLocalModels(fetcher, config, signal);
     return { model: discovered.selectedModel, advertisedModels: discovered.advertisedModels };
   } catch (error) {
+    if (error instanceof Error && error.message === LLM_REDIRECT_ERROR) throw error;
     if (!isAutoModel(configuredModel)) return { model: configuredModel, advertisedModels: [] };
     throw error;
   }
@@ -276,15 +208,29 @@ let validationFetcher: HttpFetcher | null = null;
 
 function localLlmFetcher(config: JsonRecord, hostFetcher: HttpFetcher | null): HttpFetcher {
   const baseUrl = text(config.llmBaseUrl).trim();
-  if (baseUrl) validateLlmBaseUrl(baseUrl);
-  if (boolValue(config.llmAllowPrivateNetwork, false) && baseUrl && isExplicitLanEndpoint(baseUrl)) {
-    // Paperclip's host-managed ctx.http intentionally blocks RFC1918/loopback targets.
-    // Bypass it only for an explicitly configured loopback/RFC1918/ULA endpoint.
-    // Link-local/cloud-metadata and arbitrary public hosts never use the bypass.
-    return async (input, init) => fetch(input, init);
-  }
-  if (!hostFetcher) throw new Error("Board Cockpit HTTP client is not ready");
-  return hostFetcher;
+  if (!baseUrl) throw new Error("Local LLM base URL is not configured");
+  validateLlmBaseUrl(baseUrl);
+  const allowPrivateNetwork = boolValue(config.llmAllowPrivateNetwork, false);
+  let selectedFetcher: Promise<HttpFetcher> | null = null;
+
+  return async (input, init) => {
+    if (!selectedFetcher) {
+      selectedFetcher = (async () => {
+        const approvedAddresses = await assertDirectLlmEndpointPolicy(baseUrl, allowPrivateNetwork);
+        const resolvesPrivate = approvedAddresses.some((item) => addressKind(item.address) === "private");
+        if (resolvesPrivate) {
+          // Private endpoints require the explicit opt-in above. The direct client is
+          // DNS-pinned to the exact policy-approved addresses; public endpoints keep
+          // using Paperclip's managed HTTP client for connection tests/model discovery.
+          return createPinnedDirectLlmFetcher(baseUrl, approvedAddresses);
+        }
+        if (!hostFetcher) throw new Error("Board Cockpit HTTP client is not ready");
+        return hostFetcher;
+      })();
+    }
+    const fetcher = await selectedFetcher;
+    return fetcher(input, init);
+  };
 }
 
 function rec(value: unknown): JsonRecord {
@@ -926,10 +872,13 @@ const plugin = definePlugin({
       const baseUrl = text(config.llmBaseUrl).trim();
       if (!baseUrl) throw new Error("LLM base URL is not configured");
       validateLlmBaseUrl(baseUrl);
-      await assertDirectLlmEndpointPolicy(baseUrl, boolValue(config.llmAllowPrivateNetwork, false));
+      const approvedAddresses = await assertDirectLlmEndpointPolicy(baseUrl, boolValue(config.llmAllowPrivateNetwork, false));
       const endpoint = normalizeChatCompletionsUrl(baseUrl);
       if (!endpoint) throw new Error("LLM base URL is not configured");
-      const fetcher: HttpFetcher = async (url, init) => fetch(url, init);
+      // Analysis calls deliberately stay on a direct worker path because the host
+      // HTTP invocation scope can expire before a slow local model answers. Pin the
+      // socket destination to the exact addresses approved by the policy check.
+      const fetcher: HttpFetcher = createPinnedDirectLlmFetcher(baseUrl, approvedAddresses);
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeoutSeconds * 1000);
       try {
@@ -949,6 +898,7 @@ const plugin = definePlugin({
             chat_template_kwargs: { enable_thinking: false },
           }),
           signal: controller.signal,
+          redirect: "error",
         });
         if (!response.ok) {
           const body = (await response.text()).slice(0, 500);

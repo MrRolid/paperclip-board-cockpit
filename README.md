@@ -251,7 +251,7 @@ The model choice shown in Board Cockpit follows the adapter/model information al
 
 ## Supported environment
 
-Board Cockpit v0.9.2 was developed against:
+Board Cockpit v0.9.3 was developed against:
 
 ```text
 Paperclip:               2026.831.1
@@ -283,8 +283,8 @@ cd paperclip-board-cockpit
 ## Install from a release archive
 
 ```bash
-unzip paperclip-board-cockpit-v0.9.2.zip
-cd paperclip-board-cockpit-0.9.2
+unzip paperclip-board-cockpit-v0.9.3.zip
+cd paperclip-board-cockpit-0.9.3
 ./install-local.sh
 ```
 
@@ -321,7 +321,7 @@ paperclipai plugin health rolid.board-cockpit
 Expected output includes:
 
 ```text
-version=0.9.2
+version=0.9.3
 status=ready
 ```
 
@@ -377,11 +377,7 @@ PONG · thinkingcap · 35 ms
 
 ### Why the private/LAN checkbox exists
 
-Paperclip's managed plugin HTTP client intentionally rejects private/reserved targets as an SSRF defense.
-
-Board Cockpit can optionally bypass that restriction using direct Node `fetch`, but only for explicitly trusted local/private LLM endpoints.
-
-Do not enable this for arbitrary user-supplied URLs.
+Paperclip's managed plugin HTTP client intentionally rejects private/reserved targets as an SSRF defense. Connection tests and model detection use the host HTTP client for public endpoints and the plugin's DNS-pinned direct client only for private endpoints with the explicit opt-in; analysis calls always use the direct client after Board Cockpit's own destination policy because host HTTP calls are tied to the shorter UI invocation scope. Redirects are refused and direct connections use only the addresses that passed the policy check. See [SECURITY.md](SECURITY.md) for details.
 
 ---
 
@@ -695,15 +691,6 @@ Use **Detect model**. Manual model naming is normally unnecessary for local Open
 Check the version shown in the Cockpit header. Owner goals require v0.9.0+.
 
 ---
-# Roadmap
-
-Next three steps, in order:
-
-1. 0.9.3: npm package and hardening of the direct LLM fetch path.
-2. 0.9.4: source-level provenance. Every advisor claim cites the exact issue, comment or handoff field it came from.
-3. 0.9.5: injection detection for all shipped UI languages, measured by a regression corpus in CI.
-
-Full roadmap and the things that are deliberately not planned: [docs/ROADMAP.md](docs/ROADMAP.md).
 
 # Known limitations
 
@@ -768,6 +755,7 @@ Repository layout:
 src/manifest.ts       plugin manifest/capabilities/settings
 src/worker.ts         data synthesis, LLM orchestration, plugin actions
 src/security.ts       input/output LLM safety preprocessing
+src/llm-network.ts    direct LLM destination policy and DNS-pinned HTTP(S) client
 src/briefing.ts       structured handoff parsing
 src/runtime.ts        runtime-signal interpretation
 src/locale.ts         locale resolution
@@ -816,6 +804,18 @@ Do not include:
 - LLM credentials
 
 in a public GitHub issue.
+
+---
+
+# Release 0.9.3
+
+v0.9.3 is a narrow direct-LLM transport hardening release. Redirects are refused, direct connections are pinned to the addresses that passed the destination-policy check, carrier-grade NAT (`100.64.0.0/10`) requires the private-endpoint opt-in, and IPv6 private/link-local checks apply only to actual IP literals.
+
+The endpoint range logic now uses one shared address classifier. Public connection tests/model discovery continue through Paperclip's managed HTTP client, opted-in private probes use the pinned direct client, and analysis calls remain on the direct worker path after policy validation.
+
+There are no changes to Paperclip capabilities, project-state logic, prompts, owner goals, handoff parsing, UI layout, or i18n.
+
+See [CHANGELOG.md](CHANGELOG.md) and [RELEASE_NOTES_v0.9.3.md](RELEASE_NOTES_v0.9.3.md).
 
 ---
 

@@ -27,9 +27,26 @@ These controls are defense in depth. They do not make arbitrary LLM output trust
 
 ## Private/LAN LLM endpoints
 
-Paperclip's managed HTTP client intentionally blocks private/reserved destinations. Board Cockpit provides an explicit opt-in for operator-controlled LAN LLM endpoints.
+Paperclip's managed HTTP client intentionally blocks private/reserved destinations. Board Cockpit provides an explicit opt-in for operator-controlled private/LAN LLM endpoints.
 
-Only enable **Allow private/LAN local LLM endpoints** for infrastructure you control. The bypass is limited to loopback/RFC1918/ULA-style destinations; obvious metadata/link-local targets and credentials embedded in endpoint URLs are rejected.
+Connection tests and model discovery use Paperclip's managed HTTP client for public endpoints. If an endpoint resolves to a private address and the private-network option is enabled, Board Cockpit uses its direct HTTP(S) client. Analysis calls use the direct client after the same destination-policy check because the host HTTP invocation scope may expire before a slow model responds.
+
+Every direct connection is pinned to the exact DNS addresses that passed the policy check. The original configured hostname is retained for the HTTP `Host` header, TLS SNI and certificate validation. Direct requests refuse redirects instead of following them to a new destination.
+
+Address classes are treated as follows:
+
+| Class | Ranges/examples | Policy |
+| --- | --- | --- |
+| private | loopback, RFC1918, `100.64.0.0/10`, IPv6 ULA `fc00::/7` | Requires **Allow private/LAN local LLM endpoints** |
+| link-local | `169.254.0.0/16`, IPv6 `fe80::/10` | Always rejected |
+| public | other policy-approved IPv4/IPv6 addresses | Allowed; public probes use the managed host client |
+
+Credentials embedded directly in the LLM URL are rejected. IPv6 private/link-local classification is applied only to actual IP literals or DNS results; ordinary DNS names beginning with strings such as `fd` are not classified by prefix.
+
+### Known limitations of the endpoint policy
+
+- Direct analysis/private-endpoint requests are intended for directly reachable endpoints and do not inherit proxy behavior from Paperclip's managed HTTP client.
+- Destination policy is a network-boundary defense, not authentication of the LLM service itself. Use endpoint authentication and trusted transport where appropriate.
 
 ## Sensitive data
 
