@@ -37,7 +37,7 @@ async function startServer(handler: http.RequestListener): Promise<{ server: htt
 
 describe("Board Cockpit v0.9.3 direct LLM hardening", () => {
   it("keeps the release read-only and does not add capabilities", () => {
-    expect(manifest.version).toBe("0.9.5");
+    expect(manifest.version).toBe("0.9.6");
     expect(manifest.capabilities).not.toContain("issues.update");
     expect(manifest.capabilities).not.toContain("agents.invoke");
     expect(manifest.capabilities).not.toContain("issue.relations.write");

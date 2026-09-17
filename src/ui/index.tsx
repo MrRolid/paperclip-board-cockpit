@@ -19,7 +19,7 @@ import {
 import { tr } from "./i18n.js";
 import { tokenizeRichText, type ProvenanceAudit, type SourceRef } from "../provenance.js";
 
-const BOARD_COCKPIT_VERSION = "0.9.5";
+const BOARD_COCKPIT_VERSION = "0.9.6";
 
 type IssueView = {
   id: string;
@@ -115,7 +115,7 @@ type CockpitData = {
     runnable: number;
   };
   projectState: {
-    waveState: "RUNNING" | "WAITING_FOR_OWNER" | "BLOCKED" | "READY_BUT_IDLE" | "IDLE";
+    waveState: "RUNNING" | "WAITING_FOR_OWNER" | "BLOCKED" | "READY_BUT_IDLE" | "ORCHESTRATION_ATTENTION" | "IDLE";
     activeWorkers: number;
     runnableWork: number;
     ownerActions: number;
@@ -126,6 +126,18 @@ type CockpitData = {
       name: string;
       status: string;
       issue: IssueView | null;
+      lastHeartbeatAt?: string | null;
+      heartbeatAgeMinutes?: number | null;
+      staleRuntime?: boolean;
+    };
+    orchestration: {
+      primary: string;
+      classifications: string[];
+      recommendedAction: string;
+      existingWaveOpen: boolean;
+      ownerActionRequired: boolean;
+      shouldSuggestNewTask: boolean;
+      coordinatorNeedsAttention: boolean;
     };
     lastMilestone: null | {
       issue: IssueView;
@@ -143,6 +155,9 @@ type CockpitData = {
   blocked: Array<IssueView & {
     blockers: Array<{ id: string; identifier: string; title: string; status: string }>;
     unresolvedBlockerCount: number;
+    relationKnown: boolean;
+    relationError: string | null;
+    classification: "BLOCKED_BY_OPEN_TASK" | "STALE_BLOCKER" | "BLOCKED_WITHOUT_RELATION" | "BLOCKER_STATE_UNKNOWN";
   }>;
   recent: Array<IssueView & { commentExcerpt: string | null; summary: CompletionSummary }>;
   next: IssueView[];
@@ -150,6 +165,8 @@ type CockpitData = {
     summary: string;
     reason: string;
     ownerAction: string;
+    actionCode: string;
+    ownerActionRequired: boolean;
   };
   preferences: {
     languagePreference: LanguagePreference;
@@ -427,7 +444,7 @@ function Stat({ label, value, tone = "neutral" }: { label: string; value: number
 }
 
 function WaveBadge({ state }: { state: CockpitData["projectState"]["waveState"] }) {
-  const tone = state === "RUNNING" ? "ok" : state === "WAITING_FOR_OWNER" || state === "READY_BUT_IDLE" ? "warn" : state === "BLOCKED" ? "bad" : "neutral";
+  const tone = state === "RUNNING" ? "ok" : state === "WAITING_FOR_OWNER" || state === "READY_BUT_IDLE" || state === "ORCHESTRATION_ATTENTION" ? "warn" : state === "BLOCKED" ? "bad" : "neutral";
   return <Badge tone={tone}>{state}</Badge>;
 }
 
@@ -568,6 +585,7 @@ function ProjectState({ data, locale }: { data: CockpitData; locale: Locale }) {
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
         <WaveBadge state={ps.waveState} />
         <span style={{ color: colors.muted, fontSize: 12 }}>{tr(locale, "implementationWave")}</span>
+        <Badge tone={ps.orchestration.ownerActionRequired ? "warn" : "neutral"}>{ps.orchestration.primary}</Badge>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 10, marginBottom: 12 }}>
@@ -686,8 +704,9 @@ function Cockpit({ companyId, compact }: { companyId: string; compact: boolean }
   if (!data) return <div style={{ padding: 8 }}>{tr(fallbackLocale, "noData")}</div>;
 
   const compatible =
-    data.schemaVersion === 7 &&
+    data.schemaVersion === 8 &&
     Boolean(data.projectState) &&
+    Boolean(data.projectState.orchestration) &&
     Boolean(data.nextState) &&
     Boolean(data.health) &&
     Array.isArray(data.now) &&
@@ -1211,10 +1230,15 @@ function Cockpit({ companyId, compact }: { companyId: string; compact: boolean }
               {data.blocked.map((issue) => (
                 <div key={issue.id}>
                   <IssueLine issue={issue} />
-                  <div style={{ marginLeft: 12, marginTop: 4, color: issue.unresolvedBlockerCount === 0 ? colors.bad : colors.muted, fontSize: 12 }}>
-                    {issue.blockers.length === 0
-                      ? tr(locale, "staleBlocked")
-                      : `${tr(locale, "blockedBy")}: ${issue.blockers.map((b) => `${b.identifier} (${b.status})`).join(", ")}`}
+                  <div style={{ marginLeft: 12, marginTop: 4, color: issue.classification === "BLOCKED_BY_OPEN_TASK" ? colors.muted : colors.bad, fontSize: 12 }}>
+                    <strong>{issue.classification}</strong>{" · "}
+                    {issue.classification === "BLOCKER_STATE_UNKNOWN"
+                      ? tr(locale, "relationUnknown")
+                      : issue.classification === "BLOCKED_WITHOUT_RELATION"
+                        ? tr(locale, "staleBlocked")
+                        : issue.classification === "STALE_BLOCKER"
+                          ? `${tr(locale, "staleCompletedBlocker")} ${tr(locale, "blockedBy")}: ${issue.blockers.map((b) => `${b.identifier} (${b.status})`).join(", ")}`
+                          : `${tr(locale, "blockedBy")}: ${issue.blockers.map((b) => `${b.identifier} (${b.status})`).join(", ")}`}
                   </div>
                 </div>
               ))}

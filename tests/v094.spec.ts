@@ -61,7 +61,7 @@ function taskFixture(commentIds = ["1f3a9b2c12345678", "2a4b6c8d12345678"]): any
 
 describe("Board Cockpit v0.9.4 source-level provenance", () => {
   it("keeps the release read-only", () => {
-    expect(manifest.version).toBe("0.9.5");
+    expect(manifest.version).toBe("0.9.6");
     expect(manifest.capabilities).not.toContain("issues.update");
     expect(manifest.capabilities).not.toContain("agents.invoke");
     expect(manifest.capabilities).not.toContain("issue.relations.write");

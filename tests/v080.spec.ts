@@ -9,7 +9,7 @@ const i18nSource = fs.readFileSync(path.resolve("src/ui/i18n.ts"), "utf8");
 
 describe("Board Cockpit v0.8.0 planning and security", () => {
   it("marks an idle project with an original brief as a continuation decision", () => {
-    expect(manifest.version).toBe("0.9.5");
+    expect(manifest.version).toBe("0.9.6");
     expect(workerSource).toContain("continuationDecisionNeeded");
     expect(workerSource).toContain('kind: "planning" as const');
     expect(workerSource).toContain('tr(language, "next_continuation")');

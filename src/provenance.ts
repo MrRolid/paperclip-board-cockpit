@@ -87,7 +87,7 @@ function addRef(registry: SourceRegistry, ref: SourceRef): void {
 
 function issueStateExcerpt(issue: Record<string, unknown>): string {
   const state: Record<string, unknown> = {};
-  for (const key of ["status", "assigneeAgentId", "assigneeName", "updatedAt", "parent", "blockers", "blockedBy", "blocks", "unresolvedBlockerCount", "runtimeSignal", "runtimeSignals"]) {
+  for (const key of ["status", "assigneeAgentId", "assigneeName", "updatedAt", "parent", "blockers", "blockedBy", "blocks", "unresolvedBlockerCount", "relationKnown", "relationError", "classification", "runtimeSignal", "runtimeSignals"]) {
     if (issue[key] !== undefined && issue[key] !== null && issue[key] !== "") state[key] = issue[key];
   }
   return cleanExcerpt(JSON.stringify(state));

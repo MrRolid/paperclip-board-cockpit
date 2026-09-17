@@ -6,6 +6,41 @@ Board Cockpit is designed as a read-only human control plane for Paperclip. The 
 
 ---
 
+## 0.9.6
+
+### Deterministic orchestration-state classification
+
+- Added explicit blocked-task classifications: `BLOCKED_BY_OPEN_TASK`, `STALE_BLOCKER`, `BLOCKED_WITHOUT_RELATION`, and `BLOCKER_STATE_UNKNOWN`.
+- Relation read failures are preserved as unknown evidence instead of being collapsed into an empty `blockedBy` list.
+- Added a deterministic project orchestration decision with action codes for active work, executable work, real blockers, stale/unknown orchestration state, owner blockers, and genuine planning gaps.
+- An open issue now suppresses continuation/new-wave owner actions. This fixes the case where stale blocked or orphaned in-progress work could be mistaken for a completed implementation wave.
+- A concrete owner action no longer freezes unrelated runnable tasks; independent executable work remains the primary next action while the owner item stays visible.
+- Orphaned `in_progress` work with no active worker is treated as orchestration recovery, not project completion.
+- Coordinator runtime/heartbeat context is exposed when existing work needs wakeup/reconciliation.
+
+### Less meta-work, fewer unnecessary LLM recommendations
+
+- Hardened advisor prompts so an existing wave is continued or reconciled before a new top-level implementation task is suggested.
+- `Suggested next task` must be `NOT NEEDED` when deterministic state says a new task is unnecessary.
+- Added explicit guards against blind `blocked -> todo/in_progress` recommendations.
+- Added anti-meta-work rules: prefer implementation, verified state change, real dependency resolution, deployment, or a concrete owner decision over management-task churn.
+- Added explicit `VERIFIED` / `INFERRED` / `UNKNOWN` epistemic discipline for orchestration evidence.
+- Board Cockpit still makes no automatic LLM analysis calls.
+
+### UI and compatibility
+
+- Cockpit schema bumped to `8`.
+- Blocked-task cards now distinguish real open blockers, stale completed blockers, missing blocker relations, and unavailable relation state.
+- Added deterministic orchestration classification/action fields to the owner snapshot.
+- Preserved the read-only capability boundary; no issue-write, relation-write or agent-invoke capability was added.
+- Added v0.9.6 regression tests for blocked-state classification, existing-wave protection, stale in-progress work, owner-action gating and prompt guards.
+
+### Known limitation
+
+- Paperclip-wide execution-vs-orchestration token accounting is not exposed by the read-only data used here, so v0.9.6 does not invent token estimates. The release reduces avoidable advisor/meta-work instead.
+
+---
+
 ## 0.9.5
 
 ### Multilingual prompt-injection hardening

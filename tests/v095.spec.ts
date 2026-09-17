@@ -21,7 +21,7 @@ function corpus(kind: "injection" | "benign" | "advice-unsafe" | "advice-benign"
 
 describe("Board Cockpit v0.9.5 multilingual injection hardening", () => {
   it("keeps the release read-only and preserves zip-distribution package metadata", () => {
-    expect(manifest.version).toBe("0.9.5");
+    expect(manifest.version).toBe("0.9.6");
     expect(manifest.capabilities).toEqual([
       "issues.read", "issue.relations.read", "issue.comments.read", "issue.interactions.read",
       "approvals.read", "agents.read", "plugin.state.read", "plugin.state.write", "http.outbound",
@@ -29,7 +29,7 @@ describe("Board Cockpit v0.9.5 multilingual injection hardening", () => {
       "ui.sidebar.register", "ui.detailTab.register",
     ]);
     const pkg = JSON.parse(readFileSync(resolve(here, "..", "package.json"), "utf8"));
-    expect(pkg.version).toBe("0.9.5");
+    expect(pkg.version).toBe("0.9.6");
     expect(pkg.name).toBe("@rolid/board-cockpit");
     expect(pkg.private).toBe(true);
   });
