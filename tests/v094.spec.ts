@@ -61,7 +61,7 @@ function taskFixture(commentIds = ["1f3a9b2c12345678", "2a4b6c8d12345678"]): any
 
 describe("Board Cockpit v0.9.4 source-level provenance", () => {
   it("keeps the release read-only", () => {
-    expect(manifest.version).toBe("0.9.6");
+    expect(manifest.version).toBe("0.9.7");
     expect(manifest.capabilities).not.toContain("issues.update");
     expect(manifest.capabilities).not.toContain("agents.invoke");
     expect(manifest.capabilities).not.toContain("issue.relations.write");
@@ -161,7 +161,7 @@ describe("Board Cockpit v0.9.4 source-level provenance", () => {
     expect((workerSource.match(/promptDataWithLegend\(snapshot, inputSecurity, registry\)/g) ?? []).length).toBeGreaterThanOrEqual(5);
     expect(provenanceSource).toContain("SOURCE IDS: cite as [ID]");
     expect(workerSource).toContain("provenanceRegistry: taggedInput.registry");
-    expect(workerSource).toContain("directLocalPrompt({ config, system: prompts.system, user: prompts.user })");
+    expect(workerSource).toContain("directLocalPrompt({ config: promptConfig, system: prompts.system, user: prompts.user })");
     expect(workerSource).toContain("system: prompts.system");
     expect(workerSource).toContain("user: prompts.user");
   });

@@ -213,7 +213,9 @@ The host Paperclip translation catalogue is not currently exposed as a stable pu
 
 LLM use is **optional and manual**. Nothing is sent to an LLM until the owner clicks an analysis button.
 
-Board Cockpit supports three advisor sources.
+Board Cockpit supports local, current-company CLI, and reusable instance-wide advisor sources.
+
+The advisor selector can use an already configured Codex, Claude, or Grok CLI from the current company. Compatible advisors discovered in another company are also published into a small instance-wide registry so a new company does not need the same CLI configuration duplicated.
 
 ## Local OpenAI-compatible LLM
 
@@ -243,7 +245,19 @@ The advisor uses the local Codex CLI in a restricted/read-only analysis path. It
 
 Likewise, `claude_local` agents can be exposed as advisory model choices and use the local Claude CLI.
 
-The model choice shown in Board Cockpit follows the adapter/model information already associated with the Paperclip agent.
+## Existing Grok CLI configuration
+
+Board Cockpit v0.9.7 also recognizes Grok/xAI CLI-backed Paperclip agents. Native Grok/xAI adapter names are supported, and a generic process adapter is accepted only when its configured command directly launches `grok`. The advisor process runs in Grok's read-only sandbox with terminal write/edit and web tools disabled.
+
+The model choice shown in Board Cockpit follows the adapter/model information already associated with the Paperclip agent. For Grok, Board Cockpit intentionally lets the already configured CLI choose its default model rather than forcing a model on the headless command.
+
+## Reusing advisors across companies
+
+Paperclip scopes agent reads to the active company. Board Cockpit therefore does **not** bypass that boundary or read another company's tasks/agents directly. Instead, while a company's Cockpit is opened, v0.9.7 records a minimal instance-wide advisor launch profile for compatible CLI advisors and working local OpenAI-compatible endpoints. A later company can select those profiles from **Shared advisors from other companies**.
+
+Only reusable launch metadata is shared: provider/adapter kind, display name/model, command, allow-listed CLI config-home paths, or local endpoint connection settings. Project context, issues, comments, owner goals, analysis results and API keys are not copied into the shared registry.
+
+Because discovery is passive, open Board Cockpit once in an existing company after upgrading to v0.9.7 before expecting its advisor to appear in another company.
 
 ---
 
@@ -251,7 +265,7 @@ The model choice shown in Board Cockpit follows the adapter/model information al
 
 ## Supported environment
 
-Board Cockpit v0.9.6 was developed against:
+Board Cockpit v0.9.7 was developed against:
 
 ```text
 Paperclip:               2026.831.1
@@ -283,8 +297,8 @@ cd paperclip-board-cockpit
 ## Install from a release archive
 
 ```bash
-unzip paperclip-board-cockpit-v0.9.6.zip
-cd paperclip-board-cockpit-0.9.6
+unzip paperclip-board-cockpit-0.9.7.zip
+cd paperclip-board-cockpit-0.9.7
 ./install-local.sh
 ```
 
@@ -321,7 +335,7 @@ paperclipai plugin health rolid.board-cockpit
 Expected output includes:
 
 ```text
-version=0.9.6
+version=0.9.7
 status=ready
 ```
 
@@ -580,7 +594,8 @@ Nothing leaves Paperclip because of Board Cockpit unless you explicitly run an L
 When an analysis is requested, a bounded/sanitized project snapshot is sent to the selected advisor source:
 
 - local OpenAI-compatible endpoint, or
-- selected local Codex/Claude CLI.
+- selected Codex/Claude/Grok CLI advisor from the current company, or
+- a reusable advisor profile learned from another company on the same Paperclip instance.
 
 Review your own model/provider privacy policy before using project data with external services.
 
@@ -610,7 +625,7 @@ Paperclip issues / agents / approvals
           └──────────────┐
                          ▼
                optional advisor model
-               local / Codex / Claude
+               local / Codex / Claude / Grok / shared
                          │
                          ▼
                    advisory result
@@ -670,7 +685,7 @@ Do not use the bypass for arbitrary URLs.
 
 Use model discovery first. Some reasoning models can consume a tiny completion budget on hidden thinking and return no normal content. Board Cockpit's connectivity test uses `/v1/models`, not a tiny chat prompt.
 
-## Codex/Claude analysis returns only a run marker
+## Codex/Claude/Grok analysis returns only a run marker
 
 Board Cockpit uses the host CLI analysis path rather than relying on a Paperclip agent-session summary marker. Confirm the CLI is installed and authenticated for the Paperclip service user.
 
@@ -814,6 +829,18 @@ Do not include:
 - LLM credentials
 
 in a public GitHub issue.
+
+---
+
+# Release 0.9.7
+
+v0.9.7 adds Grok CLI as an owner-advisor source and introduces an instance-wide reusable advisor registry. Compatible Codex, Claude and Grok CLI profiles — plus working local OpenAI-compatible endpoints — can be learned while visiting one company and then selected from another company without copying project data between companies.
+
+The registry stores only minimal launch metadata. It does not copy owner goals, issues, comments, analysis output or API keys. Paperclip's company-scoped agent-read boundary remains intact, and the plugin still has no issue-write, relation-write or agent-invoke capability. Grok advisory execution uses a read-only sandbox with terminal edit/write and web tools disabled.
+
+Shared discovery is passive: after upgrading, open Board Cockpit once in a source company so its compatible advisor profile is registered.
+
+See [CHANGELOG.md](CHANGELOG.md) and [RELEASE_NOTES_v0.9.7.md](RELEASE_NOTES_v0.9.7.md).
 
 ---
 

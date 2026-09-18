@@ -6,6 +6,34 @@ Board Cockpit is designed as a read-only human control plane for Paperclip. The 
 
 ---
 
+## 0.9.7
+
+### Grok CLI advisor
+
+- Added Grok/xAI CLI as a supported Board Cockpit advisor family alongside Codex and Claude.
+- Recognizes native Grok/xAI adapter names and generic process adapters only when their command directly launches `grok`.
+- Grok advisory execution uses a read-only sandbox and disables terminal edit/write plus web tools.
+- Does not force a Grok model on the headless command; the existing CLI configuration remains authoritative.
+
+### Reusable advisors across Paperclip companies
+
+- Added a bounded instance-scoped advisor registry so compatible advisors learned in one company can be selected in another.
+- Preserved Paperclip's company-scoped agent-read boundary; Board Cockpit never queries another company's agents/tasks directly.
+- Shared CLI profiles contain only allow-listed launch metadata and no API keys, task content, owner goals, comments or analysis output.
+- Working local OpenAI-compatible endpoint profiles can also be reused across companies.
+- Shared discovery is passive: visiting a company's Cockpit registers/refreshes its compatible advisor profiles.
+- Stale registry profiles are pruned after 180 days.
+
+### UI / compatibility
+
+- Added **Shared advisors from other companies** to the advisor selector.
+- Added `grok` as an allowed default advisor family.
+- Cockpit schema bumped to `9`.
+- Preserved the read-only Paperclip capability boundary: no issue-write, relation-write, cross-company-read or agent-invoke capability was added.
+- Added v0.9.7 regression tests for Grok recognition, safe shared metadata, registry normalization and UI exposure.
+
+---
+
 ## 0.9.6
 
 ### Deterministic orchestration-state classification

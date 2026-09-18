@@ -12,6 +12,20 @@ import { prepareUntrustedLlmData, sanitizeModelOutput, scanGeneratedAdvice, untr
 import { attachProvenance, auditAdviceProvenance, citationRules, provenanceWarnings, sourceLegend, type SourceRegistry } from "./provenance.js";
 import { LLM_REDIRECT_ERROR, addressKind, assertDirectLlmEndpointPolicy, createPinnedDirectLlmFetcher, isObviouslyPrivateEndpoint, validateLlmBaseUrl } from "./llm-network.js";
 import { classifyBlockedState, decideProjectOrchestration, type BlockedClassification } from "./orchestration.js";
+import {
+  advisorKindForAdapter,
+  advisorProviderLabel,
+  emptySharedAdvisorRegistry,
+  isSupportedAnalysisAdapter,
+  normalizeSharedAdvisorRegistry,
+  safeAdvisorAdapterConfig,
+  sharedAgentSourceId,
+  sharedLocalSourceId,
+  type AdvisorKind,
+  type SharedAdvisorRegistry,
+  type SharedCliAdvisor,
+  type SharedLocalAdvisor,
+} from "./advisors.js";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -413,10 +427,6 @@ function agentAdapterInfo(agent: Agent): { adapterType: string; model: string | 
   return { adapterType, model, config };
 }
 
-function isSupportedAnalysisAdapter(adapterType: string): boolean {
-  return adapterType === "codex_local" || adapterType === "claude_local";
-}
-
 
 type OwnerGoal = {
   id: string;
@@ -755,7 +765,7 @@ function agentEnvFromConfig(config: JsonRecord): NodeJS.ProcessEnv {
     const value = process.env[key];
     if (typeof value === "string" && value) result[key] = value;
   }
-  for (const key of ["CODEX_HOME", "CLAUDE_CONFIG_DIR"]) {
+  for (const key of ["CODEX_HOME", "CLAUDE_CONFIG_DIR", "GROK_HOME", "GROK_CONFIG_DIR", "XAI_CONFIG_DIR"]) {
     if (typeof env[key] === "string" && env[key]) result[key] = env[key] as string;
   }
   return result;
@@ -828,8 +838,9 @@ async function runDirectAgentCli(input: {
 }): Promise<string> {
   const { adapterType, adapterConfig, model, prompt, timeoutSeconds } = input;
   const env = agentEnvFromConfig(adapterConfig);
+  const advisorKind = advisorKindForAdapter(adapterType, adapterConfig);
 
-  if (adapterType === "codex_local") {
+  if (advisorKind === "codex") {
     const command = text(adapterConfig.command, "codex") || "codex";
     const args = ["exec", "--sandbox", "read-only", "--skip-git-repo-check"];
     if (model) args.push("--model", model);
@@ -846,7 +857,7 @@ async function runDirectAgentCli(input: {
     return sanitizeModelOutput(stripPrivateReasoning(output));
   }
 
-  if (adapterType === "claude_local") {
+  if (advisorKind === "claude") {
     const command = text(adapterConfig.command, "claude") || "claude";
     const args = ["-p", "--output-format", "json", "--permission-mode", "plan", "--max-turns", "1"];
     if (model) args.push("--model", model);
@@ -861,6 +872,30 @@ async function runDirectAgentCli(input: {
     const result = contentText(payload.result);
     if (!result) throw new Error("Claude CLI returned no final result");
     return sanitizeModelOutput(stripPrivateReasoning(result));
+  }
+
+  if (advisorKind === "grok") {
+    const command = text(adapterConfig.command, "grok") || "grok";
+    // Grok is used only as an owner-side advisor. The official CLI supports an
+    // OS-enforced read-only sandbox, so the advisor cannot modify the checkout.
+    // We deliberately do not pass --model: current Grok CLI releases have had
+    // regressions where explicit --model can hang headless runs; the already
+    // configured CLI default is safer for this advisory path.
+    const args = [
+      "-p",
+      prompt,
+      "--sandbox",
+      "read-only",
+      "--disallowed-tools",
+      "run_terminal_cmd,search_replace,web_search,web_fetch",
+    ];
+    const output = await runProcessForText({
+      command,
+      args,
+      timeoutSeconds,
+      env,
+    });
+    return sanitizeModelOutput(stripPrivateReasoning(output));
   }
 
   throw new Error(`Unsupported direct advisor adapter: ${adapterType}`);
@@ -878,6 +913,169 @@ const plugin = definePlugin({
     // setTimeout continuations.
     const companyAnalysisRuntime = new Map<string, JsonRecord>();
     const issueAnalysisRuntime = new Map<string, JsonRecord>();
+
+    const sharedAdvisorStateKey = {
+      scopeKind: "instance" as const,
+      namespace: "board-cockpit",
+      stateKey: "shared-advisor-registry-v1",
+    };
+
+    const loadSharedAdvisorRegistry = async (): Promise<SharedAdvisorRegistry> => {
+      try {
+        return normalizeSharedAdvisorRegistry(await ctx.state.get(sharedAdvisorStateKey));
+      } catch (error) {
+        ctx.logger.warn("Board Cockpit could not read the shared advisor registry", { error: errorText(error) });
+        return emptySharedAdvisorRegistry();
+      }
+    };
+
+    const storeSharedAdvisorRegistry = async (registry: SharedAdvisorRegistry): Promise<void> => {
+      try {
+        await ctx.state.set(sharedAdvisorStateKey, registry);
+      } catch (error) {
+        // Shared discovery is a convenience only. Never break the cockpit because
+        // an older Paperclip build cannot persist instance-scoped plugin state.
+        ctx.logger.warn("Board Cockpit could not persist the shared advisor registry", { error: errorText(error) });
+      }
+    };
+
+    const cliProfileFromAgent = (companyId: string, agent: Agent): SharedCliAdvisor | null => {
+      const adapter = agentAdapterInfo(agent);
+      const advisorKind = advisorKindForAdapter(adapter.adapterType, adapter.config);
+      if (!advisorKind) return null;
+      const a = agent as unknown as JsonRecord;
+      const safeConfig = safeAdvisorAdapterConfig(adapter.config);
+      return {
+        id: sharedAgentSourceId(companyId, agent.id),
+        originCompanyId: companyId,
+        originAgentId: agent.id,
+        name: text(a.name, agent.id.slice(0, 8)),
+        advisorKind,
+        adapterType: adapter.adapterType,
+        model: adapter.model,
+        command: safeConfig.command ?? null,
+        env: safeConfig.env ?? {},
+        lastSeenAt: new Date().toISOString(),
+      };
+    };
+
+    const sharedProfileAdapterConfig = (profile: SharedCliAdvisor): JsonRecord => ({
+      ...(profile.command ? { command: profile.command } : {}),
+      ...(Object.keys(profile.env).length > 0 ? { env: profile.env } : {}),
+    });
+
+    const syncSharedAdvisorRegistry = async (input: {
+      companyId: string;
+      agents: Agent[];
+      local?: Omit<SharedLocalAdvisor, "id" | "originCompanyId" | "lastSeenAt"> | null;
+    }): Promise<SharedAdvisorRegistry> => {
+      const current = await loadSharedAdvisorRegistry();
+      const next: SharedAdvisorRegistry = { version: 1, cli: [...current.cli], local: [...current.local] };
+      const now = new Date();
+      const nowIso = now.toISOString();
+      const refreshCutoffMs = now.getTime() - 24 * 60 * 60 * 1000;
+      const expiryCutoffMs = now.getTime() - 180 * 24 * 60 * 60 * 1000;
+      let changed = false;
+
+      const currentProfiles = input.agents
+        .map((agent) => cliProfileFromAgent(input.companyId, agent))
+        .filter((profile): profile is SharedCliAdvisor => profile !== null);
+
+      for (const profile of currentProfiles) {
+        const index = next.cli.findIndex((candidate) => candidate.id === profile.id);
+        if (index < 0) {
+          next.cli.push(profile);
+          changed = true;
+          continue;
+        }
+        const previous = next.cli[index]!;
+        const materiallyChanged =
+          previous.name !== profile.name ||
+          previous.advisorKind !== profile.advisorKind ||
+          previous.adapterType !== profile.adapterType ||
+          previous.model !== profile.model ||
+          previous.command !== profile.command ||
+          JSON.stringify(previous.env) !== JSON.stringify(profile.env);
+        const lastSeenMs = Date.parse(previous.lastSeenAt);
+        if (materiallyChanged || !Number.isFinite(lastSeenMs) || lastSeenMs < refreshCutoffMs) {
+          next.cli[index] = { ...profile, lastSeenAt: nowIso };
+          changed = true;
+        }
+      }
+
+      if (input.local) {
+        const id = sharedLocalSourceId(input.companyId);
+        const profile: SharedLocalAdvisor = {
+          id,
+          originCompanyId: input.companyId,
+          ...input.local,
+          lastSeenAt: nowIso,
+        };
+        const index = next.local.findIndex((candidate) => candidate.id === id);
+        if (index < 0) {
+          next.local.push(profile);
+          changed = true;
+        } else {
+          const previous = next.local[index]!;
+          const materiallyChanged =
+            previous.label !== profile.label ||
+            previous.baseUrl !== profile.baseUrl ||
+            previous.model !== profile.model ||
+            previous.allowPrivateNetwork !== profile.allowPrivateNetwork ||
+            previous.timeoutSeconds !== profile.timeoutSeconds ||
+            previous.maxTokens !== profile.maxTokens;
+          const lastSeenMs = Date.parse(previous.lastSeenAt);
+          if (materiallyChanged || !Number.isFinite(lastSeenMs) || lastSeenMs < refreshCutoffMs) {
+            next.local[index] = profile;
+            changed = true;
+          }
+        }
+      }
+
+      const beforeCli = next.cli.length;
+      const beforeLocal = next.local.length;
+      next.cli = next.cli
+        .filter((profile) => !Number.isFinite(Date.parse(profile.lastSeenAt)) || Date.parse(profile.lastSeenAt) >= expiryCutoffMs)
+        .slice(-100);
+      next.local = next.local
+        .filter((profile) => !Number.isFinite(Date.parse(profile.lastSeenAt)) || Date.parse(profile.lastSeenAt) >= expiryCutoffMs)
+        .slice(-50);
+      if (beforeCli !== next.cli.length || beforeLocal !== next.local.length) changed = true;
+
+      if (changed) await storeSharedAdvisorRegistry(next);
+      return next;
+    };
+
+    const sharedSourceProfile = async (source: string): Promise<SharedCliAdvisor | SharedLocalAdvisor | null> => {
+      const registry = await loadSharedAdvisorRegistry();
+      if (source.startsWith("shared-agent:")) return registry.cli.find((profile) => profile.id === source) ?? null;
+      if (source.startsWith("shared-local:")) return registry.local.find((profile) => profile.id === source) ?? null;
+      return null;
+    };
+
+    const assertSourceCanRun = async (companyId: string, source: string, config: JsonRecord): Promise<void> => {
+      if (source === "local") {
+        if (!boolValue(config.llmEnabled, false)) throw new Error("Local LLM analysis is disabled in plugin settings");
+        return;
+      }
+      if (source.startsWith("agent:")) {
+        const agentId = source.slice("agent:".length);
+        const agents = await ctx.agents.list({ companyId, limit: 100, offset: 0 });
+        const agent = agents.find((candidate) => candidate.id === agentId);
+        if (!agent) throw new Error("Selected Paperclip agent no longer exists in this company");
+        const adapter = agentAdapterInfo(agent);
+        if (!isSupportedAnalysisAdapter(adapter.adapterType, adapter.config)) {
+          throw new Error("Selected Paperclip agent is not backed by a supported Codex, Claude, or Grok CLI");
+        }
+        return;
+      }
+      if (source.startsWith("shared-agent:") || source.startsWith("shared-local:")) {
+        const profile = await sharedSourceProfile(source);
+        if (!profile) throw new Error("Selected shared advisor is no longer present in the instance advisor registry");
+        return;
+      }
+      throw new Error("Unsupported LLM source");
+    };
 
     const publicAnalysisState = (value: JsonRecord): JsonRecord => {
       const copy = { ...value };
@@ -953,16 +1151,38 @@ const plugin = definePlugin({
       provenanceRegistry: SourceRegistry;
     }): Promise<void> => {
       const { companyId, source, config, system, user, onState, baseState, provenanceRegistry } = input;
-      if (!source.startsWith("agent:")) throw new Error("Unsupported Paperclip agent source");
-      const agentId = source.slice("agent:".length);
-      const agents = await ctx.agents.list({ companyId, limit: 100, offset: 0 });
-      const agent = agents.find((candidate) => candidate.id === agentId);
-      if (!agent) throw new Error("Selected Paperclip agent no longer exists");
-      const adapter = agentAdapterInfo(agent);
-      if (!isSupportedAnalysisAdapter(adapter.adapterType)) throw new Error("Selected Paperclip agent is not backed by Codex or Claude");
-      const a = agent as unknown as JsonRecord;
-      const sourceLabel = `${text(a.name, agent.id.slice(0, 8))} (${adapter.adapterType}, direct CLI)`;
-      const model = adapter.model ?? adapter.adapterType;
+
+      let adapterType = "";
+      let adapterConfig: JsonRecord = {};
+      let model: string | null = null;
+      let sourceLabel = "";
+      let advisorKind: AdvisorKind | null = null;
+
+      if (source.startsWith("agent:")) {
+        const agentId = source.slice("agent:".length);
+        const agents = await ctx.agents.list({ companyId, limit: 100, offset: 0 });
+        const agent = agents.find((candidate) => candidate.id === agentId);
+        if (!agent) throw new Error("Selected Paperclip agent no longer exists");
+        const adapter = agentAdapterInfo(agent);
+        advisorKind = advisorKindForAdapter(adapter.adapterType, adapter.config);
+        if (!advisorKind) throw new Error("Selected Paperclip agent is not backed by a supported Codex, Claude, or Grok CLI");
+        const a = agent as unknown as JsonRecord;
+        adapterType = adapter.adapterType;
+        adapterConfig = adapter.config;
+        model = adapter.model;
+        sourceLabel = `${text(a.name, agent.id.slice(0, 8))} (${advisorProviderLabel(advisorKind)}, current company)`;
+      } else if (source.startsWith("shared-agent:")) {
+        const profile = await sharedSourceProfile(source);
+        if (!profile || !("originAgentId" in profile)) throw new Error("Selected shared CLI advisor no longer exists in the registry");
+        advisorKind = profile.advisorKind;
+        adapterType = profile.adapterType;
+        adapterConfig = sharedProfileAdapterConfig(profile);
+        model = profile.model;
+        sourceLabel = `${profile.name} (${advisorProviderLabel(profile.advisorKind)}, shared from another company)`;
+      } else {
+        throw new Error("Unsupported Paperclip CLI advisor source");
+      }
+
       const timeoutSeconds = Math.max(
         30,
         Math.min(300, numberValue(config.llmTimeoutSeconds, 45) < 120 ? 120 : numberValue(config.llmTimeoutSeconds, 45)),
@@ -971,19 +1191,18 @@ const plugin = definePlugin({
       const settle = (state: JsonRecord) => {
         if (settled) return;
         settled = true;
-        onState({ ...baseState, ...state, source, sourceLabel, model, persisted: false });
+        onState({ ...baseState, ...state, source, sourceLabel, model: model ?? adapterType, persisted: false });
       };
 
       // Paperclip 2026.831.1's agent-session bridge can return a completion marker
       // instead of the adapter transcript ("transcript withheld — see run log").
-      // For an owner-side read-only advisor, invoke the already-installed local
-      // Codex/Claude CLI directly, reusing the adapter's model and config-home.
-      // The process runs in a fresh temporary directory and receives only the
-      // bounded snapshot embedded in the prompt.
+      // For an owner-side read-only advisor, invoke the already-installed CLI
+      // directly. Shared advisor profiles contain only allow-listed launch metadata
+      // (command + config-home paths), never task/project content or API secrets.
       void runDirectAgentCli({
-        adapterType: adapter.adapterType,
-        adapterConfig: adapter.config,
-        model: adapter.model,
+        adapterType,
+        adapterConfig,
+        model,
         prompt: `${system}\n\n${user}`,
         timeoutSeconds,
       })
@@ -996,7 +1215,7 @@ const plugin = definePlugin({
           settle({
             status: "error",
             generatedAt: new Date().toISOString(),
-            error: `Direct ${adapter.adapterType === "codex_local" ? "Codex" : "Claude"} CLI advisor failed: ${errorText(error)}`,
+            error: `Direct ${advisorKind ? advisorProviderLabel(advisorKind) : adapterType} advisor failed: ${errorText(error)}`,
           });
         });
     };
@@ -1098,43 +1317,112 @@ const plugin = definePlugin({
       ]);
 
       const agentsById = new Map(agents.map((agent) => [agent.id, agent]));
-      const agentLlmSources = agents
-        .map((agent) => {
-          const a = agent as unknown as JsonRecord;
-          const adapter = agentAdapterInfo(agent);
-          return {
-            id: `agent:${agent.id}`,
-            kind: "agent" as const,
-            agentId: agent.id,
-            label: `${text(a.name, agent.id.slice(0, 8))} (${adapter.adapterType === "codex_local" ? "Codex CLI" : "Claude CLI"})`,
-            adapterType: adapter.adapterType,
-            model: adapter.model,
-            available: isSupportedAnalysisAdapter(adapter.adapterType),
-          };
-        })
-        .filter((source) => source.available);
       const localLlmSource = {
         id: "local",
         kind: "local" as const,
         agentId: null,
+        originCompanyId: companyId,
         label: "Local OpenAI-compatible LLM",
         adapterType: "openai_compatible",
+        advisorKind: null as AdvisorKind | null,
         model: effectiveLocalModel || null,
         available: Boolean(llmBaseUrl) && (!isObviouslyPrivateEndpoint(llmBaseUrl) || llmAllowPrivateNetwork),
       };
-      const llmSources = [localLlmSource, ...agentLlmSources];
-      const defaultAgentSource = llmDefaultSource === "codex"
-        ? agentLlmSources.find((source) => source.adapterType === "codex_local")
-        : llmDefaultSource === "claude"
-          ? agentLlmSources.find((source) => source.adapterType === "claude_local")
-          : undefined;
-      const fallbackLlmSource = llmDefaultSource === "local" && localLlmSource.available
+
+      const agentLlmSources = agents
+        .map((agent) => {
+          const a = agent as unknown as JsonRecord;
+          const adapter = agentAdapterInfo(agent);
+          const advisorKind = advisorKindForAdapter(adapter.adapterType, adapter.config);
+          if (!advisorKind) return null;
+          return {
+            id: `agent:${agent.id}`,
+            kind: "agent" as const,
+            agentId: agent.id,
+            originCompanyId: companyId,
+            label: `${text(a.name, agent.id.slice(0, 8))} (${advisorProviderLabel(advisorKind)})`,
+            adapterType: adapter.adapterType,
+            advisorKind,
+            model: adapter.model,
+            available: true,
+          };
+        })
+        .filter((source): source is NonNullable<typeof source> => source !== null);
+
+      let reusableLocalProfile: Omit<SharedLocalAdvisor, "id" | "originCompanyId" | "lastSeenAt"> | null = null;
+      if (llmEnabled && localLlmSource.available && llmBaseUrl) {
+        try {
+          // Do not persist malformed URLs or URLs with embedded credentials into
+          // instance-wide state. Network reachability is checked again on use.
+          validateLlmBaseUrl(llmBaseUrl);
+          reusableLocalProfile = {
+            label: "Local OpenAI-compatible LLM",
+            baseUrl: llmBaseUrl,
+            model: effectiveLocalModel || "auto",
+            allowPrivateNetwork: llmAllowPrivateNetwork,
+            timeoutSeconds: Math.max(5, Math.min(300, numberValue(config.llmTimeoutSeconds, 45))),
+            maxTokens: Math.max(128, Math.min(4096, numberValue(config.llmMaxTokens, 900))),
+          };
+        } catch {
+          reusableLocalProfile = null;
+        }
+      }
+
+      const sharedRegistry = await syncSharedAdvisorRegistry({
+        companyId,
+        agents,
+        local: reusableLocalProfile,
+      });
+
+      const sharedAgentSources = sharedRegistry.cli
+        .filter((profile) => profile.originCompanyId !== companyId)
+        .map((profile) => ({
+          id: profile.id,
+          kind: "shared-agent" as const,
+          agentId: profile.originAgentId,
+          originCompanyId: profile.originCompanyId,
+          label: `${profile.name} (${advisorProviderLabel(profile.advisorKind)}) · shared`,
+          adapterType: profile.adapterType,
+          advisorKind: profile.advisorKind,
+          model: profile.model,
+          available: true,
+        }));
+
+      const sharedLocalSources = sharedRegistry.local
+        .filter((profile) => profile.originCompanyId !== companyId)
+        .map((profile) => ({
+          id: profile.id,
+          kind: "shared-local" as const,
+          agentId: null,
+          originCompanyId: profile.originCompanyId,
+          label: `${profile.label} · shared`,
+          adapterType: "openai_compatible",
+          advisorKind: null as AdvisorKind | null,
+          model: profile.model || null,
+          available: true,
+        }));
+
+      const llmSources = [localLlmSource, ...agentLlmSources, ...sharedAgentSources, ...sharedLocalSources];
+      const defaultAdvisorKind: AdvisorKind | null =
+        llmDefaultSource === "codex" ? "codex"
+          : llmDefaultSource === "claude" ? "claude"
+            : llmDefaultSource === "grok" ? "grok"
+              : null;
+      const defaultAgentSource = defaultAdvisorKind
+        ? [...agentLlmSources, ...sharedAgentSources].find((source) => source.advisorKind === defaultAdvisorKind)
+        : undefined;
+      const fallbackLlmSource = llmDefaultSource === "local" && localLlmSource.available && llmEnabled
         ? "local"
-        : defaultAgentSource?.id ?? (localLlmSource.available ? "local" : agentLlmSources[0]?.id ?? "local");
+        : defaultAgentSource?.id
+          ?? agentLlmSources[0]?.id
+          ?? sharedAgentSources[0]?.id
+          ?? sharedLocalSources[0]?.id
+          ?? (localLlmSource.available && llmEnabled ? "local" : "local");
       const selectedLlmSource = llmSources.some((source) => source.id === selectedLlmSourceState)
         ? selectedLlmSourceState
         : fallbackLlmSource;
       const selectedLlmSourceInfo = llmSources.find((source) => source.id === selectedLlmSource) ?? localLlmSource;
+      const selectedSourceReady = selectedLlmSourceInfo.available && (selectedLlmSourceInfo.kind !== "local" || llmEnabled);
       const views = issues.map((issue) => issueView(issue, agentsById));
       const issueById = new Map(views.map((issue) => [issue.id, issue]));
 
@@ -1500,7 +1788,7 @@ const plugin = definePlugin({
       const lastMilestoneBrief = lastMilestoneIssue ? briefings.get(lastMilestoneIssue.id) ?? null : null;
 
       const result = {
-        schemaVersion: 8,
+        schemaVersion: 9,
         generatedAt: new Date().toISOString(),
         lastSeenAt,
         stats: {
@@ -1557,8 +1845,8 @@ const plugin = definePlugin({
         activeOwnerGoals: activeGoals,
         projectContext,
         llm: {
-          enabled: llmEnabled,
-          configured: llmEnabled && selectedLlmSourceInfo.available,
+          enabled: selectedSourceReady,
+          configured: selectedSourceReady,
           baseUrl: llmBaseUrl || null,
           model: effectiveLocalModel,
           allowPrivateNetwork: llmAllowPrivateNetwork,
@@ -1956,14 +2244,22 @@ const plugin = definePlugin({
       const companyId = actionContext.companyId;
       if (!companyId) throw new Error("companyId is required");
       const source = text(params.source);
-      if (source !== "local" && !source.startsWith("agent:")) throw new Error("Unsupported LLM source");
+      if (source !== "local" && !source.startsWith("agent:") && !source.startsWith("shared-agent:") && !source.startsWith("shared-local:")) {
+        throw new Error("Unsupported LLM source");
+      }
       if (source.startsWith("agent:")) {
         const agentId = source.slice("agent:".length);
         const agents = await ctx.agents.list({ companyId, limit: 100, offset: 0 });
         const agent = agents.find((candidate) => candidate.id === agentId);
-        if (!agent || !isSupportedAnalysisAdapter(agentAdapterInfo(agent).adapterType)) {
-          throw new Error("Selected Paperclip agent is not a connected Codex or Claude adapter");
+        if (!agent) throw new Error("Selected Paperclip agent no longer exists");
+        const adapter = agentAdapterInfo(agent);
+        if (!isSupportedAnalysisAdapter(adapter.adapterType, adapter.config)) {
+          throw new Error("Selected Paperclip agent is not a supported Codex, Claude, or Grok CLI advisor");
         }
+      }
+      if (source.startsWith("shared-agent:") || source.startsWith("shared-local:")) {
+        const profile = await sharedSourceProfile(source);
+        if (!profile) throw new Error("Selected shared advisor is no longer present in the instance registry");
       }
       await ctx.state.set(
         {
@@ -2035,9 +2331,9 @@ const plugin = definePlugin({
         const companyId = actionContext.companyId;
         if (!companyId) throw new Error("companyId is required");
         const config = rec(await ctx.config.get(companyId));
-        if (!boolValue(config.llmEnabled, false)) throw new Error("LLM analysis is disabled in plugin settings");
         const localeHint = text(params.localeHint);
         const requestedSource = text(params.source) || "local";
+        await assertSourceCanRun(companyId, requestedSource, config);
         const startedAt = new Date().toISOString();
 
         const cockpitSnapshot = await buildCockpit(companyId, localeHint);
@@ -2076,14 +2372,28 @@ const plugin = definePlugin({
           publicAnalysisState(runningState),
         );
 
-        if (requestedSource === "local") {
-          void directLocalPrompt({ config, system: prompts.system, user: prompts.user })
+        if (requestedSource === "local" || requestedSource.startsWith("shared-local:")) {
+          let promptConfig = config;
+          let sourceLabel = "Local OpenAI-compatible LLM";
+          if (requestedSource.startsWith("shared-local:")) {
+            const profile = await sharedSourceProfile(requestedSource);
+            if (!profile || !("baseUrl" in profile)) throw new Error("Selected shared local LLM is no longer present in the registry");
+            promptConfig = {
+              llmBaseUrl: profile.baseUrl,
+              llmModel: profile.model,
+              llmAllowPrivateNetwork: profile.allowPrivateNetwork,
+              llmTimeoutSeconds: profile.timeoutSeconds,
+              llmMaxTokens: profile.maxTokens,
+            };
+            sourceLabel = `${profile.label} (shared from another company)`;
+          }
+          void directLocalPrompt({ config: promptConfig, system: prompts.system, user: prompts.user })
             .then((result) => {
               companyAnalysisRuntime.set(companyId, {
                 status: "done",
                 generatedAt: new Date().toISOString(),
                 source: requestedSource,
-                sourceLabel: result.sourceLabel,
+                sourceLabel,
                 model: result.model,
                 analysis: result.analysis,
                 ...analysisResultSecurity(result.analysis, taggedInput.registry),
@@ -2128,8 +2438,8 @@ const plugin = definePlugin({
         const issueId = text(params.issueId);
         if (!issueId) throw new Error("issueId is required");
         const config = rec(await ctx.config.get(companyId));
-        if (!boolValue(config.llmEnabled, false)) throw new Error("LLM analysis is disabled in plugin settings");
         const requestedSource = text(params.source) || "local";
+        await assertSourceCanRun(companyId, requestedSource, config);
         const mode = text(params.mode, "summary").toLowerCase();
         const localeHint = text(params.localeHint);
         const startedAt = new Date().toISOString();
@@ -2160,14 +2470,28 @@ const plugin = definePlugin({
           publicAnalysisState(runningState),
         );
 
-        if (requestedSource === "local") {
-          void directLocalPrompt({ config, system: prompts.system, user: prompts.user })
+        if (requestedSource === "local" || requestedSource.startsWith("shared-local:")) {
+          let promptConfig = config;
+          let sourceLabel = "Local OpenAI-compatible LLM";
+          if (requestedSource.startsWith("shared-local:")) {
+            const profile = await sharedSourceProfile(requestedSource);
+            if (!profile || !("baseUrl" in profile)) throw new Error("Selected shared local LLM is no longer present in the registry");
+            promptConfig = {
+              llmBaseUrl: profile.baseUrl,
+              llmModel: profile.model,
+              llmAllowPrivateNetwork: profile.allowPrivateNetwork,
+              llmTimeoutSeconds: profile.timeoutSeconds,
+              llmMaxTokens: profile.maxTokens,
+            };
+            sourceLabel = `${profile.label} (shared from another company)`;
+          }
+          void directLocalPrompt({ config: promptConfig, system: prompts.system, user: prompts.user })
             .then((result) => {
               issueAnalysisRuntime.set(issueId, {
                 status: "done",
                 generatedAt: new Date().toISOString(),
                 source: requestedSource,
-                sourceLabel: result.sourceLabel,
+                sourceLabel,
                 model: result.model,
                 mode,
                 analysis: result.analysis,
@@ -2226,7 +2550,7 @@ const plugin = definePlugin({
   async onValidateConfig(config) {
     const resolved = rec(config);
     if (!boolValue(resolved.llmEnabled, false)) return { ok: true };
-    if (!text(resolved.llmBaseUrl).trim()) return { ok: true, warnings: ["Local LLM endpoint is not configured; Codex/Claude agent analysis may still be used."] };
+    if (!text(resolved.llmBaseUrl).trim()) return { ok: true, warnings: ["Local LLM endpoint is not configured; Codex/Claude/Grok CLI or shared advisor analysis may still be used."] };
     if (!validationFetcher && !boolValue(resolved.llmAllowPrivateNetwork, false)) {
       return { ok: false, errors: ["Board Cockpit HTTP client is not ready yet. Retry Test Connection in a moment."] };
     }

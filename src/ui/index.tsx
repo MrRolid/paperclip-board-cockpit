@@ -19,7 +19,7 @@ import {
 import { tr } from "./i18n.js";
 import { tokenizeRichText, type ProvenanceAudit, type SourceRef } from "../provenance.js";
 
-const BOARD_COCKPIT_VERSION = "0.9.6";
+const BOARD_COCKPIT_VERSION = "0.9.7";
 
 type IssueView = {
   id: string;
@@ -56,10 +56,12 @@ type RuntimeAgent = {
 
 type LlmSource = {
   id: string;
-  kind: "local" | "agent";
+  kind: "local" | "agent" | "shared-agent" | "shared-local";
   agentId: string | null;
+  originCompanyId?: string;
   label: string;
   adapterType: string;
+  advisorKind?: "codex" | "claude" | "grok" | null;
   model: string | null;
   available: boolean;
 };
@@ -704,7 +706,7 @@ function Cockpit({ companyId, compact }: { companyId: string; compact: boolean }
   if (!data) return <div style={{ padding: 8 }}>{tr(fallbackLocale, "noData")}</div>;
 
   const compatible =
-    data.schemaVersion === 8 &&
+    data.schemaVersion === 9 &&
     Boolean(data.projectState) &&
     Boolean(data.projectState.orchestration) &&
     Boolean(data.nextState) &&
@@ -887,6 +889,8 @@ function Cockpit({ companyId, compact }: { companyId: string; compact: boolean }
   };
 
   const selectedSource = data.llm.sources.find((source) => source.id === data.llm.selectedSource);
+  const selectedIsCli = selectedSource?.kind === "agent" || selectedSource?.kind === "shared-agent";
+  const selectedIsLocal = selectedSource?.kind === "local" || selectedSource?.kind === "shared-local";
   const analysisRunning = data.llm.latestAnalysis?.status === "running";
   const persistedAnalysisError = data.llm.latestAnalysis?.status === "error" ? data.llm.latestAnalysis.error ?? "Unknown LLM error" : null;
 
@@ -899,17 +903,17 @@ function Cockpit({ companyId, compact }: { companyId: string; compact: boolean }
               {data.llm.configured ? tr(locale, "llmReady") : tr(locale, "llmUnavailable")}
             </div>
             <div style={{ color: colors.muted, fontSize: 11, marginTop: 3 }}>
-              {selectedSource?.kind === "agent"
+              {selectedIsCli
                 ? tr(locale, "agentSourceHint")
-                : tr(locale, "localSourceHint", { model: data.llm.model })}
+                : tr(locale, "localSourceHint", { model: selectedSource?.model ?? data.llm.model })}
             </div>
           </div>
           <Badge tone={analysisRunning ? "info" : data.llm.configured ? "ok" : "warn"}>
             {analysisRunning
               ? "analysis running"
-              : selectedSource?.kind === "agent"
-                ? `${selectedSource.adapterType}${selectedSource.model ? ` · ${selectedSource.model}` : ""}`
-                : `${data.llm.model}${data.llm.allowPrivateNetwork ? " · LAN direct" : ""}`}
+              : selectedIsCli
+                ? `${selectedSource?.adapterType ?? "CLI"}${selectedSource?.model ? ` · ${selectedSource.model}` : ""}`
+                : `${selectedSource?.model ?? data.llm.model}${selectedSource?.kind === "local" && data.llm.allowPrivateNetwork ? " · LAN direct" : selectedSource?.kind === "shared-local" ? " · shared" : ""}`}
           </Badge>
         </div>
 
@@ -947,6 +951,13 @@ function Cockpit({ companyId, compact }: { companyId: string; compact: boolean }
               {data.llm.sources.filter((source) => source.kind === "agent").map((source) => (
                 <option key={source.id} value={source.id} disabled={!source.available}>
                   {source.label} · {source.adapterType}{source.model ? ` · ${source.model}` : ""}{!source.available ? " · unavailable" : ""}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label={tr(locale, "sharedAdvisors")}>
+              {data.llm.sources.filter((source) => source.kind === "shared-agent" || source.kind === "shared-local").map((source) => (
+                <option key={source.id} value={source.id} disabled={!source.available}>
+                  {source.label}{source.model ? ` · ${source.model}` : ""}{!source.available ? " · unavailable" : ""}
                 </option>
               ))}
             </optgroup>
@@ -992,6 +1003,12 @@ function Cockpit({ companyId, compact }: { companyId: string; compact: boolean }
         {selectedSource?.kind === "local" ? (
           <div style={{ color: colors.muted, fontSize: 11, lineHeight: 1.45 }}>
             Stačí zadat URL endpointu. „Zjistit model“ načte <code>/v1/models</code> a model vybere automaticky. V nastavení už název modelu ručně zadávat nemusíš.
+          </div>
+        ) : null}
+
+        {selectedSource?.kind === "shared-agent" || selectedSource?.kind === "shared-local" ? (
+          <div style={{ color: colors.muted, fontSize: 11, lineHeight: 1.45 }}>
+            Tento advisor byl bezpečně zaregistrován při použití Board Cockpitu v jiné firmě. Sdílí se jen spouštěcí profil/model; tasky, owner goals ani projektový kontext se mezi firmami nesdílejí.
           </div>
         ) : null}
 
@@ -1578,8 +1595,8 @@ export function IssueCockpitAssistant({ context }: PluginDetailTabProps) {
         </div>
       ) : !running ? <Empty>{label.noAnalysis}</Empty> : null}
 
-      {selectedSource?.kind === "agent" ? (
-        <div style={{ color: colors.muted, fontSize: 10 }}>Uses the existing Paperclip {selectedSource.adapterType} connection. The assistant is instructed to analyze only and not modify the task.</div>
+      {selectedSource?.kind === "agent" || selectedSource?.kind === "shared-agent" ? (
+        <div style={{ color: colors.muted, fontSize: 10 }}>Uses an existing Paperclip CLI advisor profile ({selectedSource.adapterType}). The assistant is restricted to analysis and does not modify the task.</div>
       ) : null}
     </div>
   );

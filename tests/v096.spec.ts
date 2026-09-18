@@ -25,14 +25,14 @@ function decision(overrides: Partial<Parameters<typeof decideProjectOrchestratio
   });
 }
 
-describe("Board Cockpit v0.9.6 orchestration hardening", () => {
-  it("ships as 0.9.6 without adding write/invoke capabilities", () => {
-    expect(manifest.version).toBe("0.9.6");
+describe("Board Cockpit v0.9.7 orchestration hardening", () => {
+  it("ships as 0.9.7 without adding write/invoke capabilities", () => {
+    expect(manifest.version).toBe("0.9.7");
     expect(manifest.capabilities).not.toContain("issues.update");
     expect(manifest.capabilities).not.toContain("issue.relations.write");
     expect(manifest.capabilities).not.toContain("agents.invoke");
     const pkg = JSON.parse(readFileSync(resolve("package.json"), "utf8"));
-    expect(pkg.version).toBe("0.9.6");
+    expect(pkg.version).toBe("0.9.7");
   });
 
   it("classifies a real open dependency without suggesting manual unblock", () => {
@@ -168,8 +168,8 @@ describe("Board Cockpit v0.9.6 orchestration hardening", () => {
   it("bumps the cockpit schema and exposes deterministic orchestration fields to the LLM snapshot", () => {
     const worker = readFileSync(resolve("src/worker.ts"), "utf8");
     const ui = readFileSync(resolve("src/ui/index.tsx"), "utf8");
-    expect(worker).toContain("schemaVersion: 8");
-    expect(ui).toContain("data.schemaVersion === 8");
+    expect(worker).toContain("schemaVersion: 9");
+    expect(ui).toContain("data.schemaVersion === 9");
     expect(worker).toContain("projectState: cockpitSnapshot.projectState");
     expect(worker).toContain("shouldSuggestNewTask: orchestration.shouldSuggestNewTask");
     expect(worker).toContain("classification = classifyBlockedState");

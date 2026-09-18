@@ -19,3 +19,4 @@ The roadmap is intentionally narrow and security-first. Items are implemented on
 - **0.9.4:** source IDs assigned after sanitization, citation-aware advisor prompts, provenance audit, unknown-citation detection and citation-aware UI.
 - **0.9.5:** seven-language injection detection, Unicode normalization, precision-first public corpora, multilingual advice linting and CI regression measurement.
 - **0.9.6:** deterministic blocked-state classification, existing-wave/new-task guards, stale execution detection, and anti-meta-work LLM guidance.
+- **0.9.7:** Grok CLI advisor support and privacy-preserving instance-wide reuse of compatible advisors across companies.

@@ -10,7 +10,7 @@ const uiSource = readFileSync(resolve(here, "../src/ui/index.tsx"), "utf8");
 
 describe("Board Cockpit v0.9.2", () => {
   it("adds the issue-level Cockpit Assistant", () => {
-    expect(manifest.version).toBe("0.9.6");
+    expect(manifest.version).toBe("0.9.7");
     expect(manifest.capabilities).toContain("ui.detailTab.register");
     expect(manifest.ui?.slots?.some((slot) => slot.type === "taskDetailView" && slot.exportName === "IssueCockpitAssistant")).toBe(true);
     expect(workerSource).toContain('ctx.data.register("issue-assistant"');
@@ -33,8 +33,7 @@ describe("Board Cockpit v0.9.2", () => {
     expect(workerSource).toContain('const companyAnalysisRuntime = new Map<string, JsonRecord>();');
     expect(workerSource).toContain('const issueAnalysisRuntime = new Map<string, JsonRecord>();');
     expect(workerSource).toContain('runDirectAgentCli');
-    expect(workerSource).toContain('codex_local');
-    expect(workerSource).toContain('claude_local');
+    expect(workerSource).toContain('advisorKindForAdapter');
     expect(workerSource).toContain('const timeoutSeconds = Math.max(');
     expect(workerSource).toContain('Math.min(300, numberValue(config.llmTimeoutSeconds, 45)');
     expect(uiSource).toContain('data?.llm.latestAnalysis?.status !== "running"');

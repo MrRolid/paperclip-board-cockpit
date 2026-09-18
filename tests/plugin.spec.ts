@@ -4,7 +4,7 @@ import manifest from "../src/manifest.js";
 describe("Board Cockpit manifest", () => {
   it("registers dashboard, full page, and main sidebar entry", () => {
     expect(manifest.id).toBe("rolid.board-cockpit");
-    expect(manifest.version).toBe("0.9.6");
+    expect(manifest.version).toBe("0.9.7");
     expect(manifest.ui?.slots?.some((slot) => slot.type === "dashboardWidget")).toBe(true);
     expect(manifest.ui?.slots?.some((slot) => slot.type === "page")).toBe(true);
     expect(manifest.ui?.slots?.some((slot) => slot.type === "sidebar")).toBe(true);
@@ -19,7 +19,7 @@ describe("Board Cockpit manifest", () => {
     expect(manifest.capabilities).not.toContain("issue.relations.write");
   });
 
-  it("can analyze through local HTTP or host Codex/Claude CLI selection", () => {
+  it("can analyze through local HTTP or Codex/Claude/Grok/shared CLI selection", () => {
     expect(manifest.capabilities).toContain("http.outbound");
     expect(manifest.capabilities).not.toContain("agent.sessions.create");
     expect(manifest.capabilities).not.toContain("agent.sessions.send");

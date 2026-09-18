@@ -3,10 +3,10 @@ import type { PaperclipPluginManifestV1 } from "@paperclipai/plugin-sdk";
 const manifest: PaperclipPluginManifestV1 = {
   id: "rolid.board-cockpit",
   apiVersion: 1,
-  version: "0.9.6",
+  version: "0.9.7",
   displayName: "Board Cockpit",
   description:
-    "Owner-centric Paperclip cockpit: deterministic orchestration-state classification, project state, owner handoffs, implementation-wave context, original-project continuity, owner-defined tracking goals, secure next-task guidance, prompt-injection-resistant LLM assistance, manual verification, per-task advice, and orchestration health.",
+    "Owner-centric Paperclip cockpit: deterministic orchestration-state classification, project state, owner handoffs, implementation-wave context, original-project continuity, owner-defined tracking goals, secure next-task guidance, prompt-injection-resistant LLM assistance, Grok/Codex/Claude CLI advisors, instance-wide reusable advisor discovery, manual verification, per-task advice, and orchestration health.",
   author: "Rolid",
   categories: ["ui"],
   capabilities: [
@@ -32,7 +32,7 @@ const manifest: PaperclipPluginManifestV1 = {
         type: "boolean",
         title: "Enable LLM analysis",
         default: false,
-        description: "Enables explicit next-step analysis through either the configured local OpenAI-compatible endpoint or the host Codex/Claude CLI selected from an existing Paperclip agent. No automatic LLM calls are made."
+        description: "Enables the company-local OpenAI-compatible endpoint. Existing Codex/Claude/Grok CLI advisors and explicitly selected shared advisors remain manual and can be reused without duplicating endpoint configuration. No automatic LLM calls are made."
       },
       llmBaseUrl: {
         type: "string",
@@ -49,9 +49,9 @@ const manifest: PaperclipPluginManifestV1 = {
       llmDefaultSource: {
         type: "string",
         title: "Default LLM provider",
-        enum: ["local", "codex", "claude"],
+        enum: ["local", "codex", "claude", "grok"],
         default: "local",
-        description: "Default provider when no source has been selected in the Cockpit. Exact connected Codex/Claude agent is selected dynamically inside Board Cockpit."
+        description: "Default provider when no source has been selected in the Cockpit. Exact connected Codex/Claude/Grok advisor is selected dynamically, including reusable instance-known advisors when the current company has none."
       },
       llmTimeoutSeconds: {
         type: "integer",
